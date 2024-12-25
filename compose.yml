@@ -1,0 +1,20 @@
+version: "3.1"
+
+networks:
+  dnet:
+    driver: bridge
+
+services:
+  mcore:
+    image: mcore
+    build:
+      context: ./
+      dockerfile: ./mcore/Dockerfile
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    networks:
+      - dnet
+    volumes:
+      - ./mcore/conf/:/conf
+      - ./mcore/data/:/data
