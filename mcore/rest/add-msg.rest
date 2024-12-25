@@ -1,0 +1,11 @@
+@url = http://localhost:8080
+POST {{url}}/add-msg/
+content-type: application/json
+secret: test
+
+{
+  "chatId": 1,
+  "userName": "AlekseyIm",
+  "text": "y https://www.youtube.com/sss",
+  "messageId": 10
+}
