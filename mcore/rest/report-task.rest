@@ -1,0 +1,10 @@
+@url = http://localhost:8080
+POST {{url}}/report-task/
+content-type: application/json
+secret: test
+
+{
+  "taskId": 100,
+  "taskType": 3,
+  "textMsg": "ok"
+}
