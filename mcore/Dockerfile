@@ -4,7 +4,7 @@ RUN apk add --no-cache git
 RUN apk add --no-cache build-base
 WORKDIR /build
 ADD . .
-RUN CGO_ENABLED=0 GOOS=linux \
+RUN CGO_ENABLED=1 GOOS=linux \
 go build -ldflags '-extldflags "-static"' -o app /build/mcore/cmd/app
 
 FROM alpine:3.21
@@ -13,6 +13,7 @@ COPY --from=build /etc/ssl/certs/ca-certificates.crt \
 /etc/ssl/certs/ca-certificates.crt
 COPY --from=build /build/app /app
 RUN mkdir /conf
+RUN mkdir /data
 EXPOSE 8080
 
 ENTRYPOINT ["/app"]

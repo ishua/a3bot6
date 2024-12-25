@@ -4,5 +4,5 @@ content-type: application/json
 secret: test
 
 {
-  "taskType": 1
+  "taskType": 2
 }
