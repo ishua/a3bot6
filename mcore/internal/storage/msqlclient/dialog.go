@@ -2,7 +2,7 @@ package msqlclient
 
 import (
 	"fmt"
-	"github.com/ishua/a3bot6/mcore/internal/schema"
+	"github.com/ishua/a3bot6/mcore/pkg/schema"
 )
 
 const createDialog string = `

@@ -93,6 +93,7 @@ Icon
 build/
 */bin
 */env
+*/venv
 __pycache__
 
 .idea/

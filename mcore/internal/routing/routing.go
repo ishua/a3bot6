@@ -2,7 +2,7 @@ package routing
 
 import (
 	"fmt"
-	"github.com/ishua/a3bot6/mcore/internal/schema"
+	"github.com/ishua/a3bot6/mcore/pkg/schema"
 	"net/url"
 	"slices"
 	"strings"
@@ -61,10 +61,6 @@ func (r *Router) Build(m schema.Message) schema.TaskMsg {
 
 func (r *Router) userAllow(user string) bool {
 	return slices.Contains(r.users, user)
-}
-
-func (r *Router) addTaskError() error {
-	return nil
 }
 
 func getTask(m schema.Message) (schema.Task, error) {

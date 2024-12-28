@@ -18,3 +18,15 @@ services:
     volumes:
       - ./mcore/conf/:/conf
       - ./mcore/data/:/data
+  tbot:
+    image: tbot
+    build:
+      context: ./
+      dockerfile: ./tbot/Dockerfile
+    restart: unless-stopped
+    networks:
+      - dnet
+    depends_on:
+      - mcore
+    volumes:
+      - ./tbot/conf/:/conf

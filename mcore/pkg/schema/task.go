@@ -5,8 +5,9 @@ import "encoding/json"
 type TaskType int
 
 const (
-	TaskTypeMsg = iota
-	TaskTypeYtdl
+	TaskTypeUndefined = iota
+	TaskTypeMsg
+	TaskTypeYtdl //use in python project
 	TaskTypeRest
 	TaskTypeNote
 	TaskTypeTorrent
@@ -15,7 +16,8 @@ const (
 type TaskStatus int
 
 const (
-	TaskStatusCreate = iota
+	TaskStatusUndefined = iota
+	TaskStatusCreate
 	TaskStatusError
 	TaskStatusSended
 	TaskStatusDone
