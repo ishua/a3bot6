@@ -27,7 +27,7 @@ func main() {
 
 	//config init
 	loader := aconfig.LoaderFor(&cfg, aconfig.Config{
-		Files: []string{"conf/config.yaml"},
+		Files: []string{"conf/mcore_config.yaml"},
 		FileDecoders: map[string]aconfig.FileDecoder{
 			".yaml": aconfigyaml.New(),
 		},

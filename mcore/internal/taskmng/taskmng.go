@@ -2,7 +2,7 @@ package taskmng
 
 import (
 	"fmt"
-	"github.com/ishua/a3bot6/mcore/internal/schema"
+	"github.com/ishua/a3bot6/mcore/pkg/schema"
 	"log"
 )
 
@@ -29,6 +29,9 @@ func (t *Client) ReportTask(taskId int64, status schema.TaskStatus, textMsg stri
 	task, err := t.repo.GetTaskById(taskId)
 	if err != nil {
 		return fmt.Errorf("reportTask %w", err)
+	}
+	if task.Status == schema.TaskStatusUndefined {
+		return fmt.Errorf("task status TaskStatusUndefined")
 	}
 	task.Status = status
 
@@ -76,6 +79,9 @@ func (t *Client) GetTask(taskType schema.TaskType) (schema.Task, error) {
 	task, err := t.repo.GetFirstTaskByType(taskType)
 	if err != nil {
 		return task, fmt.Errorf("getTask %w", err)
+	}
+	if task.Status == schema.TaskStatusUndefined {
+		return task, fmt.Errorf("task status TaskStatusUndefined")
 	}
 	if task.Id == 0 {
 		return task, err

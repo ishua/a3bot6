@@ -3,7 +3,7 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ishua/a3bot6/mcore/internal/schema"
+	"github.com/ishua/a3bot6/mcore/pkg/schema"
 	"log"
 	"net/http"
 )
@@ -52,6 +52,7 @@ func (a *Api) Run() error {
 	mux.HandleFunc("POST "+getTaskLink, a.HandlerGetTask)
 	mux.HandleFunc("POST "+reportTaskLink, a.HandlerReportTask)
 	mux.HandleFunc("POST "+addMsgLink, a.HandlerAddMsg)
+	mux.HandleFunc("GET /health/", a.HandlerHealth)
 
 	var h http.Handler
 	h = mux
@@ -200,6 +201,15 @@ func middleLog(next http.Handler) http.Handler {
 	})
 }
 
-// нужны ручки:
-// 2 завершить таску
-// 3 проверить сообщение
+func (a *Api) HandlerHealth(w http.ResponseWriter, req *http.Request) {
+	type PingRes struct {
+		Status string `json:"status"`
+	}
+
+	js, _ := json.Marshal(PingRes{Status: "OK"})
+	w.Header().Set("Content-Type", "application/json")
+	_, err := w.Write(js)
+	if err != nil {
+		log.Fatalf("health can not write answer %s", err.Error())
+	}
+}

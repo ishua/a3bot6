@@ -4,7 +4,7 @@ content-type: application/json
 secret: test
 
 {
-  "taskId": 100,
-  "taskType": 3,
+  "taskId": 2,
+  "status": 3,
   "textMsg": "ok"
 }
