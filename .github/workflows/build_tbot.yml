@@ -1,4 +1,4 @@
-name: Build MCore and Push Docker Image
+name: Build tbot and Push Docker Image
 
 on:
   push:
