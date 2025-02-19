@@ -1,4 +1,4 @@
- #!/usr/bin/python3
+ #!venv/bin/python3
 import app
 import os
 from multiprocessing import Process

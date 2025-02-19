@@ -18,7 +18,7 @@ import (
 type MyConfig struct {
 	Token      string `required:"true" env:"TELEGRAMBOTTOKEN" usage:"token for your telegram bot"`
 	Debug      bool   `default:"false" usage:"turn on debug mode"`
-	MCoreAddr  string `default:"http://127.0.0.1:8080" esage:"host and port for mcore"`
+	MCoreAddr  string `default:"http://127.0.0.1:8080" usage:"host and port for mcore"`
 	TBotSecret string `default:"test" usage:"secret key for api"`
 }
 
