@@ -1,4 +1,3 @@
- #!/usr/bin/python3
 import app
 import os
 from multiprocessing import Process
