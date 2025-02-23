@@ -18,6 +18,10 @@ CREATE TABLE IF NOT EXISTS task (
 `
 
 func (c *SqliteClient) AddTask(task schema.Task) (int64, error) {
+	if task.Type == schema.TaskTypeUndefined {
+		return 0, errors.New("invalid task type")
+	}
+
 	sqlQuery := `
 INSERT INTO task( dialog, status, type, data)
 	VALUES( ?, ?, ?, ?);
@@ -57,7 +61,7 @@ func (c *SqliteClient) getTaskFromRow(row *sql.Row) (schema.Task, error) {
 	t := &schema.Task{}
 	var data []byte
 
-	err := row.Scan(&t.Id, &t.DialogId, &t.Status, &t.Status, &data)
+	err := row.Scan(&t.Id, &t.DialogId, &t.Status, &t.Type, &data)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return schema.Task{}, nil
@@ -79,6 +83,9 @@ select id, dialog, status, type, data from task where id = ?
 }
 
 func (c *SqliteClient) GetFirstTaskByType(t schema.TaskType) (schema.Task, error) {
+	if t == schema.TaskTypeUndefined {
+		return schema.Task{}, fmt.Errorf("getFirstTaskByType: wrong task type")
+	}
 	sqlQuery := `
 SELECT id, dialog, status, type, data FROM task WHERE type = ? and status = ? ORDER BY ID LIMIT 1
 `
