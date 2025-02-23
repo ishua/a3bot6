@@ -85,6 +85,9 @@ func TestRouter_Build_Success(t *testing.T) {
 	if reply.Text != "OK" {
 		t.Errorf("expected 'OK', got '%s'", reply.Text)
 	}
+	if reply.ChatId != 123 {
+		t.Errorf("expected %d, got %d", 123, reply.ChatId)
+	}
 }
 
 // Тест ошибки при добавлении диалога

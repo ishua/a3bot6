@@ -73,6 +73,10 @@ func getTask(m schema.Message) (schema.Task, error) {
 	switch s[0] {
 	case "/y2d", "y", "Y":
 		return buildYoutubeTask(s)
+	case "/help", "h", "H":
+		return buildHelpTask(m.ChatId)
+	case "/ping", "ping", "Ping":
+		return buildPongTask(m.ChatId, m.ReplyToMessageID)
 	}
 
 	return task, fmt.Errorf("command not found")
@@ -94,7 +98,8 @@ func buildYoutubeTask(w []string) (schema.Task, error) {
 	}
 
 	task := schema.Task{
-		Type: schema.TaskTypeYtdl,
+		Type:   schema.TaskTypeYtdl,
+		Status: schema.TaskStatusCreate,
 		TaskData: schema.TaskData{
 			Ytdl: schema.TaskYtdl{
 				Link: w[1],
@@ -102,5 +107,37 @@ func buildYoutubeTask(w []string) (schema.Task, error) {
 		},
 	}
 
+	return task, nil
+}
+
+func buildHelpTask(chatId int64) (schema.Task, error) {
+	text := "You can use next command: \n" +
+		"- /y2d \n"
+	task := schema.Task{
+		Type:   schema.TaskTypeMsg,
+		Status: schema.TaskStatusCreate,
+		TaskData: schema.TaskData{
+			Msg: schema.TaskMsg{
+				ChatId: chatId,
+				Text:   text,
+			},
+		},
+	}
+	return task, nil
+}
+
+func buildPongTask(chatId int64, replyMessageId int) (schema.Task, error) {
+	text := "pong"
+	task := schema.Task{
+		Type:   schema.TaskTypeMsg,
+		Status: schema.TaskStatusCreate,
+		TaskData: schema.TaskData{
+			Msg: schema.TaskMsg{
+				ChatId:         chatId,
+				Text:           text,
+				ReplyMessageId: replyMessageId,
+			},
+		},
+	}
 	return task, nil
 }
