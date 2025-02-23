@@ -3,8 +3,8 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ishua/a3bot6/mcore/pkg/logger"
 	"github.com/ishua/a3bot6/mcore/pkg/schema"
-	"log"
 	"net/http"
 )
 
@@ -57,12 +57,11 @@ func (a *Api) Run() error {
 	var h http.Handler
 	h = mux
 	if a.debug {
-		log.Println("debug is on")
 		h = middleLog(h)
 	}
 	h = middleAuth(h, a.secrets)
 
-	log.Println("start server port:" + a.port)
+	logger.Info("start server port:" + a.port)
 	return http.ListenAndServe(":"+a.port, h)
 }
 
@@ -95,7 +94,7 @@ func (a *Api) HandlerGetTask(w http.ResponseWriter, req *http.Request) {
 	}
 	_, err = w.Write(b)
 	if err != nil {
-		log.Fatalf("HandlerGetTask can not write answer %s", err.Error())
+		logger.Fatalf("HandlerGetTask can not write answer %s", err.Error())
 	}
 
 }
@@ -123,7 +122,7 @@ func (a *Api) HandlerReportTask(w http.ResponseWriter, req *http.Request) {
 	}
 	_, err = w.Write(b)
 	if err != nil {
-		log.Fatalf("HandlerReportTask can not write answer %s", err.Error())
+		logger.Fatalf("HandlerReportTask can not write answer %s", err.Error())
 	}
 
 }
@@ -154,22 +153,22 @@ func (a *Api) HandlerAddMsg(w http.ResponseWriter, req *http.Request) {
 	}
 	_, err = w.Write(b)
 	if err != nil {
-		log.Fatalf("addMsg can not write answer %s", err.Error())
+		logger.Fatalf("addMsg can not write answer %s", err.Error())
 	}
 }
 
 func getErrResp(w http.ResponseWriter, err error) {
-	log.Println("handler: " + err.Error())
+	logger.Info("handler: " + err.Error())
 	b, err := json.Marshal(ErrorRes{
 		Error:  err.Error(),
 		Status: "error",
 	})
 	if err != nil {
-		log.Fatalf("http handler can not marshal an error %s", err.Error())
+		logger.Fatalf("http handler can not marshal an error %s", err.Error())
 	}
 	_, err = w.Write(b)
 	if err != nil {
-		log.Fatalf("http handler cannot return an error %s", err.Error())
+		logger.Fatalf("http handler cannot return an error %s", err.Error())
 	}
 	return
 }
@@ -192,15 +191,6 @@ func middleAuth(next http.Handler, secrets []string) http.Handler {
 	})
 }
 
-func middleLog(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		log.Printf("req method: %s, path: %s", r.Method, r.URL.EscapedPath())
-
-		next.ServeHTTP(w, r)
-	})
-}
-
 func (a *Api) HandlerHealth(w http.ResponseWriter, req *http.Request) {
 	type PingRes struct {
 		Status string `json:"status"`
@@ -210,6 +200,6 @@ func (a *Api) HandlerHealth(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_, err := w.Write(js)
 	if err != nil {
-		log.Fatalf("health can not write answer %s", err.Error())
+		logger.Fatalf("health can not write answer %s", err.Error())
 	}
 }

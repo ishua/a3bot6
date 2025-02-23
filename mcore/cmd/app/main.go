@@ -37,6 +37,7 @@ func main() {
 
 	if cfg.Debug {
 		logger.SetLogLevel(logger.DEBUG)
+		logger.Debugf("debug logging enabled")
 	}
 
 	//db init
