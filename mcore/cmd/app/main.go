@@ -4,8 +4,7 @@ import (
 	"github.com/ishua/a3bot6/mcore/internal/rest"
 	"github.com/ishua/a3bot6/mcore/internal/routing"
 	"github.com/ishua/a3bot6/mcore/internal/taskmng"
-	"log"
-
+	"github.com/ishua/a3bot6/mcore/pkg/logger"
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/cristalhq/aconfig"
@@ -33,7 +32,11 @@ func main() {
 		},
 	})
 	if err := loader.Load(); err != nil {
-		log.Fatal(err)
+		logger.Fatal(err.Error())
+	}
+
+	if cfg.Debug {
+		logger.SetLogLevel(logger.DEBUG)
 	}
 
 	//db init
@@ -46,7 +49,7 @@ func main() {
 	server := rest.NewApi("", taskMng, router, cfg.Debug, []string{"test"}, cfg.HttpPort)
 	err := server.Run()
 	if err != nil {
-		log.Println(err)
+		logger.Info(err.Error())
 	}
 
 	//m := schema.Message{
