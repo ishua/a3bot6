@@ -80,11 +80,11 @@ func (t *Client) GetTask(taskType schema.TaskType) (schema.Task, error) {
 	if err != nil {
 		return task, fmt.Errorf("getTask %w", err)
 	}
-	if task.Status == schema.TaskStatusUndefined {
-		return task, fmt.Errorf("task status TaskStatusUndefined")
-	}
 	if task.Id == 0 {
 		return task, err
+	}
+	if task.Status == schema.TaskStatusUndefined {
+		return task, fmt.Errorf("task status TaskStatusUndefined")
 	}
 	task.Status = schema.TaskStatusSended
 	err = t.repo.UpdateTaskStatus(task)

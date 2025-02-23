@@ -28,7 +28,7 @@ func (r *Router) Build(m schema.Message) schema.TaskMsg {
 		ChatId:         m.ChatId,
 		ReplyMessageId: m.MessageId,
 	}
-	if !r.userAllow(m.UserName) {
+	if !slices.Contains(r.users, m.UserName) {
 		reply.Text = fmt.Sprintf("I don't answer to user %s", m.UserName)
 		return reply
 	}
@@ -57,10 +57,6 @@ func (r *Router) Build(m schema.Message) schema.TaskMsg {
 	}
 	reply.Text = "OK"
 	return reply
-}
-
-func (r *Router) userAllow(user string) bool {
-	return slices.Contains(r.users, user)
 }
 
 func getTask(m schema.Message) (schema.Task, error) {

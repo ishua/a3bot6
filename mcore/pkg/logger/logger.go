@@ -14,8 +14,8 @@ const (
 var logLevel = INFO
 
 var (
-	infoLogger  = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
-	debugLogger = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile)
+	infoLogger  = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime)
+	debugLogger = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime)
 )
 
 func SetLogLevel(level int) {
