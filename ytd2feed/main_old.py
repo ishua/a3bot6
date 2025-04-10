@@ -6,12 +6,12 @@ from multiprocessing import Process
 import time
 
 def start_download(path2content: str,
-                url2content: str,
-                feedName: str,
-                feedDescription: str,
-                format: str,
-                retries: int,
-                answerer: app.Answer):
+                   url2content: str,
+                   feedName: str,
+                   feedDescription: str,
+                   format: str,
+                   retries: int,
+                   answerer: app.Answer):
     
     print("try to download")
     fc = app.FeedCreater(path2content, url2content, feedName, feedDescription)

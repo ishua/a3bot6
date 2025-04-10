@@ -41,7 +41,7 @@ func (c *SqliteClient) GetDialogById(id int64) (schema.Dialog, error) {
 	var data []byte
 	err := row.Scan(&d.Id, &d.Key, &d.DialogStatus, &data)
 	if err != nil {
-		return *d, fmt.Errorf("getDialogById scan %w", err)
+		return *d, fmt.Errorf("getDialogById = %d scan %w", d.Id, err)
 	}
 	err = d.SetMessagesFromByte(data)
 	if err != nil {

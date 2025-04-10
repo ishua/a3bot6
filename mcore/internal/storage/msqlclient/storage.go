@@ -37,6 +37,6 @@ func NewSqlClient(dbFileName string) *SqliteClient {
 	}
 }
 
-func (c *SqliteClient) DbClose() error {
-	return c.db.Close()
+func (c *SqliteClient) DbClose() {
+	_ = c.db.Close()
 }

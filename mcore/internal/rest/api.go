@@ -23,7 +23,7 @@ type taskMnger interface {
 }
 
 type router interface {
-	Build(m schema.Message) schema.TaskMsg
+	ProcessMsg(m schema.Message) schema.TaskMsg
 }
 
 func NewApi(rootPath string, taskMng taskMnger, router router, debug bool, secrets []string, port string) *Api {
@@ -141,7 +141,10 @@ func (a *Api) HandlerAddMsg(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	t := a.router.Build(m)
+	t := a.router.ProcessMsg(m)
+
+	var res schema.AddMsgReq
+	res.Status = "OK"
 
 	b, err := json.Marshal(schema.AddMsgReq{
 		Data:   t,
