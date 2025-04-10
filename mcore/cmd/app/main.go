@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/ishua/a3bot6/mcore/internal/dialogmng"
 	"github.com/ishua/a3bot6/mcore/internal/rest"
 	"github.com/ishua/a3bot6/mcore/internal/routing"
 	"github.com/ishua/a3bot6/mcore/internal/taskmng"
@@ -13,9 +14,11 @@ import (
 )
 
 type MyConfig struct {
-	HttpPort       string `default:"8080" usage:"port where start http rest"`
-	Debug          bool   `default:"false" usage:"turn on debug mode"`
-	SqliteFileName string `default:"sql.db" usage:"path to sqllite db"`
+	HttpPort       string   `default:"8080" usage:"port where start http rest"`
+	Debug          bool     `default:"false" usage:"turn on debug mode"`
+	SqliteFileName string   `default:"sql.db" usage:"path to sqllite db"`
+	Secrets        []string `usage:"secrets for api"`
+	Users          []string `usage:"users bot allowed"`
 }
 
 var (
@@ -39,41 +42,27 @@ func main() {
 		logger.SetLogLevel(logger.DEBUG)
 		logger.Debugf("debug logging enabled")
 	}
+	if len(cfg.Secrets) == 0 {
+		logger.Fatal("no secrets configured")
+	}
+
+	if len(cfg.Users) == 0 {
+		logger.Fatal("no users configured")
+	}
 
 	//db init
 	db := msqlclient.NewSqlClient(cfg.SqliteFileName)
 	defer db.DbClose()
 
-	router := routing.NewRouter([]string{"AlekseyIm"}, db)
-	taskMng := taskmng.NewClient(db)
+	taskMng := taskmng.NewTaskMng(db)
+	dialogMng := dialogmng.NewDialogMng(db)
 
-	server := rest.NewApi("", taskMng, router, cfg.Debug, []string{"test"}, cfg.HttpPort)
+	router := routing.NewRouter(cfg.Users, dialogMng, taskMng)
+
+	server := rest.NewApi("", taskMng, router, cfg.Debug, cfg.Secrets, cfg.HttpPort)
 	err := server.Run()
 	if err != nil {
 		logger.Info(err.Error())
 	}
-
-	//m := schema.Message{
-	//	UserName:         "AlekseyIm",
-	//	ChatId:           10,
-	//	MessageId:        11,
-	//	ReplyToMessageID: 9,
-	//	Text:             "y https://youtube.com/sdjfkl",
-	//}
-	//res := router.Build(m)
-	//fmt.Println(res)
-
-	//taskMng := taskmng.NewClient(db)
-	//task, err := taskMng.GetTask(schema.TaskTypeYtdl)
-	//if err != nil {
-	//	log.Fatalf(err.Error())
-	//}
-	//fmt.Println(task)
-	//
-	//err = taskMng.ReportTask(task.Id, schema.TaskStatusDone, "ok")
-	//if err != nil {
-	//	log.Fatalf(err.Error())
-	//}
-	//fmt.Println("donnee")
 
 }

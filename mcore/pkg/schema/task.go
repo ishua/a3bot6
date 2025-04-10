@@ -8,8 +8,8 @@ type TaskType int
 
 const (
 	TaskTypeUndefined = iota
-	TaskTypeMsg
-	TaskTypeYtdl //use in python project
+	TaskTypeMsg       //task for Bot, can't create another task
+	TaskTypeYtdl      //use in python project
 	TaskTypeRest
 	TaskTypeNote
 	TaskTypeTorrent
@@ -19,10 +19,10 @@ type TaskStatus int
 
 const (
 	TaskStatusUndefined = iota
-	TaskStatusCreate
-	TaskStatusError
-	TaskStatusSended
-	TaskStatusDone
+	TaskStatusCreate    //worker need to do this task
+	TaskStatusError     //worker can't complete the task
+	TaskStatusSended    //worker recived the task for work
+	TaskStatusDone      // worker completed the task
 )
 
 type Task struct {

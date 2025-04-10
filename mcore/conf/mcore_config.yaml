@@ -1,1 +1,5 @@
 debug: true
+secrets:
+  - test
+users:
+  - testUser
