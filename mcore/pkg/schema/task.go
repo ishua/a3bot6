@@ -45,7 +45,8 @@ type TaskMsg struct {
 }
 
 type TaskYtdl struct {
-	Link string `json:"link"`
+	Link     string `json:"link"`
+	UserName string `json:"userName"`
 }
 
 func (t *TaskData) Marshal() ([]byte, error) {

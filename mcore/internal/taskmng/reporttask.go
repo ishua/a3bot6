@@ -5,7 +5,7 @@ import (
 	"github.com/ishua/a3bot6/mcore/pkg/schema"
 )
 
-func (m Mng) ReportTask(taskId int64, status schema.TaskStatus, msg string) error {
+func (m *Mng) ReportTask(taskId int64, status schema.TaskStatus, msg string) error {
 	task, err := m.repo.GetTaskById(taskId)
 	if err != nil {
 		return fmt.Errorf("reportTask getTask err: %w", err)
@@ -19,6 +19,10 @@ func (m Mng) ReportTask(taskId int64, status schema.TaskStatus, msg string) erro
 	err = m.repo.UpdateTaskStatus(task)
 	if err != nil {
 		return fmt.Errorf("reportTask updateTaskStatus err: %w", err)
+	}
+
+	if status == schema.TaskStatusSended {
+		return nil
 	}
 
 	if status == schema.TaskStatusError {

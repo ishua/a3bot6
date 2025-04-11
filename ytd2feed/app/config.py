@@ -4,25 +4,26 @@ import sys
 class Conf():
     def __init__(self):
         self.conf = {}
-        with open("conf/mcore_config.yaml") as f:
+        with open("conf/ytdl_config.yaml") as f:
             self.conf = yaml.load(f, Loader=yaml.FullLoader)
 
         self.users =  self.conf.get("users")
+        print(self.conf)
         if len(self.users) < 1:
             print("need users in config")
             sys.exit(1) 
 
     @property
     def task_type(self) -> int:
-        return self.conf.get("task_type", 2)
+        return self.conf.get("taskType", 2)
 
     @property
     def mcore_addr(self) -> str:
-        return self.conf.get("mcore_addr", "http://localhost:8080")
+        return self.conf.get("mcoreAddr", "http://localhost:8080")
 
     @property
-    def ytld_mcore_secret(self) -> str:
-        return self.conf.get("ytld_mcore_secret", "test")
+    def mcore_secret(self) -> str:
+        return self.conf.get("mcoreSecret", "test")
 
     @property
     def path2content( self ) ->str: 
@@ -34,7 +35,7 @@ class Conf():
     
     @property
     def retries( self ) ->int: 
-        return self.conf.get("retries", 20)
+        return self.conf.get("retries", 2)
     
     def get_user_conf( self, user: str) -> dict:
         for u in self.users:
