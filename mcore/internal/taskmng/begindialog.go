@@ -4,8 +4,24 @@ import (
 	"fmt"
 	"github.com/ishua/a3bot6/mcore/pkg/schema"
 	"net/url"
+	"strconv"
 	"strings"
 )
+
+const trHelpText = ` This is help for /torrent command
+start words: /torrent, t, T
+next words:
+- "add" + category: "movie/m","shows/s", "cartoon/c", "cartoon_s/cs", "audiobook/a", "audiobook_p/ap" - add torrents in category
+- "list" - list torrens in actions
+- "del #" - where # it is id torrent
+`
+
+const helpCommon = ` My commands:
+- /help
+- /ping
+- /y2d
+- /torrent
+`
 
 func (m *Mng) ProcessDialogBegin(dialogId int64) (string, error) {
 	dialog, err := m.repo.GetDialogById(dialogId)
@@ -28,25 +44,23 @@ func (m *Mng) ProcessDialogBegin(dialogId int64) (string, error) {
 		}
 	}
 
-	return m.createReply(dialogId, dialog.Messages[0].UserName, userText)
+	return m.createReply(dialogId, dialog.Messages[0].UserName, userText, dialog.Messages[0].FileUrl)
 }
 
-func (m *Mng) createReply(dialogId int64, userName string, userText string) (string, error) {
+func (m *Mng) createReply(dialogId int64, userName string, userText string, fileUrl string) (string, error) {
 	s := strings.Split(userText, " ")
 	switch s[0] {
 	case "/help", "h", "H":
-		return helpDialog(), nil
+		return helpCommon, nil
 	case "/ping", "ping", "Ping":
 		return "Pong", nil
 	case "/y2d", "y", "Y":
 		return m.createYtdlTask(dialogId, userName, userText)
+	case "/torrent", "torrent", "t", "T":
+		return m.createTrTask(dialogId, userText, fileUrl)
 	}
 
 	return "", fmt.Errorf("command not found")
-}
-
-func helpDialog() string {
-	return "help text"
 }
 
 func (m *Mng) createYtdlTask(dialogId int64, userName string, text string) (string, error) {
@@ -79,5 +93,82 @@ func (m *Mng) createYtdlTask(dialogId int64, userName string, text string) (stri
 	if err != nil {
 		return "", fmt.Errorf("taskMng add task: %w", err)
 	}
-	return "task created", nil
+	return "task ytd created", nil
+}
+
+func (m *Mng) createTrTask(dialogId int64, text string, torrentUrl string) (string, error) {
+	w := strings.Split(text, " ")
+	if len(w) < 2 {
+		return "", fmt.Errorf("for tr need command")
+	}
+	var folderPath string
+	var torrentId int
+	var err error
+
+	if w[1] == "add" {
+		if len(w) < 3 {
+			return "", fmt.Errorf("for tr add need label")
+		}
+		folderPath, err = chooseFolderPath(w[2])
+		if err != nil {
+			return "", err
+		}
+
+		if len(torrentUrl) == 0 {
+			return "", fmt.Errorf("for tr add need torrent url")
+		}
+	}
+
+	if w[1] == "del" {
+		if len(w) < 3 {
+			return "", fmt.Errorf("for tr del need id")
+		}
+		torrentId, err = strconv.Atoi(w[2])
+		if err != nil {
+			return "", fmt.Errorf("for tr del id is not an int")
+		}
+	}
+
+	if w[1] == "help" {
+		return trHelpText, nil
+	}
+
+	task := schema.Task{
+		DialogId: dialogId,
+		Type:     schema.TaskTypeTorrent,
+		Status:   schema.TaskStatusCreate,
+		TaskData: schema.TaskData{
+			Tr: schema.TaskTr{
+				FolderPath: folderPath,
+				TorrentUrl: torrentUrl,
+				TorrentId:  torrentId,
+			},
+		},
+	}
+
+	_, err = m.repo.AddTask(task)
+	if err != nil {
+		return "", fmt.Errorf("taskMng add task: %w", err)
+	}
+
+	return "task tr created", nil
+}
+
+func chooseFolderPath(label string) (string, error) {
+	switch label {
+	case "m", "movie":
+		return "movie", nil
+	case "s", "shows":
+		return "shows", nil
+	case "c", "cartoon":
+		return "cartoon", nil
+	case "a", "audiobook":
+		return "audiobook", nil
+	case "ap", "audiobook_p":
+		return "audiobook_p", nil
+	case "cs", "cartoon_s":
+		return "cartoon_s", nil
+	}
+
+	return "", fmt.Errorf("wrong label")
 }

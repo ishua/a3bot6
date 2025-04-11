@@ -54,7 +54,7 @@ type TaskTr struct {
 	Command    string `json:"command"`
 	TorrentUrl string `json:"torrentUrl"`
 	FolderPath string `json:"folderPath"`
-	TorrentId  string `json:"torrentId"`
+	TorrentId  int    `json:"torrentId"`
 }
 
 func (t *TaskData) Marshal() ([]byte, error) {
