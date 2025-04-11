@@ -1,4 +1,4 @@
-
+# hurl --variables-file v.txt test1.hurl
 GET {{myurl}}/health/
 HTTP 200
 
