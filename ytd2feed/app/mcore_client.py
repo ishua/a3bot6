@@ -73,25 +73,19 @@ class McoreClient:
             print("TODO crit need send a message task")
             sys.exit(1)
         print("taskid:",str(task["id"]))
+        error_msg = ""
         if task.get("taskData") is None:
-            errorMsg =  "ytdl taskData is empty"
-            print("taskid:", str(task["id"]) ,errorMsg)
-            self.report_task(task["taskData"], 2, errorMsg)
-            return False
-        if task["taskData"].get("ytdl") is None:
-            errorMsg =  "ytdl taskData.ytdl is empty"
-            print("taskid:", str(task["id"]) ,errorMsg)
-            self.report_task(task["taskData"]["ytdl"], 2, errorMsg)
-            return False
-        if task["taskData"]["ytdl"].get("link") is None:
-            errorMsg =  "ytdl taskData.ytdl.link is empty"
-            print("taskid:", str(task["id"]) ,errorMsg)
-            self.report_task(task["taskData"]["ytdl"]["link"], 2, errorMsg)
-            return False
-        if task["taskData"]["ytdl"].get("userName") is None:
-            errorMsg =  "ytdl taskData.ytdl.userName is empty"
-            print("taskid:", str(task["id"]) ,errorMsg)
-            self.report_task(task["taskData"]["ytdl"]["userName"], 2, errorMsg)
+            error_msg =  "ytdl taskData is empty"
+        elif task["taskData"].get("ytdl") is None:
+            error_msg =  "ytdl taskData.ytdl is empty"
+        elif task["taskData"]["ytdl"].get("link") is None:
+            error_msg = "ytdl taskData.ytdl.link is empty"
+        elif task["taskData"]["ytdl"].get("userName") is None:
+            error_msg =  "ytdl taskData.ytdl.userName is empty"
+
+        if error_msg != "":
+            print("taskid:", str(task["id"]) ,error_msg)
+            self.report_task(task["id"], 2, error_msg)
             return False
 
         return self.report_task(task["id"], 3, "ytdl get the job: " + str(task["id"]))
