@@ -92,6 +92,7 @@ func (a *Api) HandlerGetTask(w http.ResponseWriter, req *http.Request) {
 		getErrResp(w, fmt.Errorf("response GetTask decode err: %w", err))
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(b)
 	if err != nil {
 		logger.Fatalf("HandlerGetTask can not write answer %s", err.Error())
@@ -120,6 +121,7 @@ func (a *Api) HandlerReportTask(w http.ResponseWriter, req *http.Request) {
 		getErrResp(w, fmt.Errorf("response reportTask decode err: %w", err))
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(b)
 	if err != nil {
 		logger.Fatalf("HandlerReportTask can not write answer %s", err.Error())
@@ -154,6 +156,7 @@ func (a *Api) HandlerAddMsg(w http.ResponseWriter, req *http.Request) {
 		getErrResp(w, fmt.Errorf("response addMsg decode err: %w", err))
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(b)
 	if err != nil {
 		logger.Fatalf("addMsg can not write answer %s", err.Error())
@@ -169,6 +172,7 @@ func getErrResp(w http.ResponseWriter, err error) {
 	if err != nil {
 		logger.Fatalf("http handler can not marshal an error %s", err.Error())
 	}
+	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(b)
 	if err != nil {
 		logger.Fatalf("http handler cannot return an error %s", err.Error())

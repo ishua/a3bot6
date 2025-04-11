@@ -1,0 +1,11 @@
+version: 0.1.0
+path2content: data
+url2content: http://localhost:8080/
+mcoreSecret: test
+mcoreAddr: http://localhost:8080
+retries: 1
+users: 
+  - name: testUser
+    feedName: rss
+    feedDescription: my rss generate
+    format: ba[ext=m4a]/ba[ext=mp3]/ba[ext=aac]

@@ -1,8 +1,0 @@
-version: 0.0.1
-path2content: data
-url2content: https://localhost/
-users: 
-  - name: AlekseyIm
-    feedName: rss
-    feedDescription: my rss generate
-    format: ba[ext=m4a]/ba[ext=mp3]/ba[ext=aac]

@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func (m Mng) ProcessDialogBegin(dialogId int64) (string, error) {
+func (m *Mng) ProcessDialogBegin(dialogId int64) (string, error) {
 	dialog, err := m.repo.GetDialogById(dialogId)
 	if err != nil {
 		return "", fmt.Errorf("taskMng get dialog by id: %w", err)
@@ -28,10 +28,10 @@ func (m Mng) ProcessDialogBegin(dialogId int64) (string, error) {
 		}
 	}
 
-	return m.createReply(dialogId, userText)
+	return m.createReply(dialogId, dialog.Messages[0].UserName, userText)
 }
 
-func (m Mng) createReply(dialogId int64, userText string) (string, error) {
+func (m *Mng) createReply(dialogId int64, userName string, userText string) (string, error) {
 	s := strings.Split(userText, " ")
 	switch s[0] {
 	case "/help", "h", "H":
@@ -39,7 +39,7 @@ func (m Mng) createReply(dialogId int64, userText string) (string, error) {
 	case "/ping", "ping", "Ping":
 		return "Pong", nil
 	case "/y2d", "y", "Y":
-		return m.createYtdlTask(dialogId, userText)
+		return m.createYtdlTask(dialogId, userName, userText)
 	}
 
 	return "", fmt.Errorf("command not found")
@@ -49,7 +49,7 @@ func helpDialog() string {
 	return "help text"
 }
 
-func (m Mng) createYtdlTask(dialogId int64, text string) (string, error) {
+func (m *Mng) createYtdlTask(dialogId int64, userName string, text string) (string, error) {
 	w := strings.Split(text, " ")
 	if len(w) < 2 {
 		return "", fmt.Errorf("for y2d need a link")
@@ -69,7 +69,8 @@ func (m Mng) createYtdlTask(dialogId int64, text string) (string, error) {
 		Status:   schema.TaskStatusCreate,
 		TaskData: schema.TaskData{
 			Ytdl: schema.TaskYtdl{
-				Link: w[1],
+				Link:     w[1],
+				UserName: userName,
 			},
 		},
 	}
