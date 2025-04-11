@@ -12,6 +12,7 @@ type Api struct {
 	rootPath string
 	taskMng  taskMnger
 	router   router
+	funcMng  funcMng
 	debug    bool
 	secrets  []string
 	port     string
@@ -21,16 +22,20 @@ type taskMnger interface {
 	GetTask(taskType schema.TaskType) (schema.Task, error)
 	ReportTask(taskId int64, status schema.TaskStatus, textMsg string) error
 }
+type funcMng interface {
+	DeleteAll() error
+}
 
 type router interface {
 	ProcessMsg(m schema.Message) schema.TaskMsg
 }
 
-func NewApi(rootPath string, taskMng taskMnger, router router, debug bool, secrets []string, port string) *Api {
+func NewApi(rootPath string, taskMng taskMnger, router router, funcMng funcMng, debug bool, secrets []string, port string) *Api {
 	return &Api{
 		rootPath: rootPath,
 		taskMng:  taskMng,
 		router:   router,
+		funcMng:  funcMng,
 		debug:    debug,
 		secrets:  secrets,
 		port:     port,
@@ -53,6 +58,7 @@ func (a *Api) Run() error {
 	mux.HandleFunc("POST "+reportTaskLink, a.HandlerReportTask)
 	mux.HandleFunc("POST "+addMsgLink, a.HandlerAddMsg)
 	mux.HandleFunc("GET /health/", a.HandlerHealth)
+	mux.HandleFunc("POST /delete-all-data/", a.HandlerDeleteAllData)
 
 	var h http.Handler
 	h = mux
@@ -161,6 +167,27 @@ func (a *Api) HandlerAddMsg(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		logger.Fatalf("addMsg can not write answer %s", err.Error())
 	}
+}
+
+func (a *Api) HandlerDeleteAllData(w http.ResponseWriter, _ *http.Request) {
+	err := a.funcMng.DeleteAll()
+	if err != nil {
+		getErrResp(w, fmt.Errorf("deleteAll err: %w", err))
+		return
+	}
+	b, err := json.Marshal(schema.Req{
+		Status: "OK",
+	})
+	if err != nil {
+		getErrResp(w, fmt.Errorf("response reportTask decode err: %w", err))
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(b)
+	if err != nil {
+		logger.Fatalf("HandlerReportTask can not write answer %s", err.Error())
+	}
+
 }
 
 func getErrResp(w http.ResponseWriter, err error) {

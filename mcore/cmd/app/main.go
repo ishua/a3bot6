@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/ishua/a3bot6/mcore/internal/dialogmng"
+	"github.com/ishua/a3bot6/mcore/internal/functions"
 	"github.com/ishua/a3bot6/mcore/internal/rest"
 	"github.com/ishua/a3bot6/mcore/internal/routing"
 	"github.com/ishua/a3bot6/mcore/internal/taskmng"
@@ -56,10 +57,11 @@ func main() {
 
 	taskMng := taskmng.NewTaskMng(db)
 	dialogMng := dialogmng.NewDialogMng(db)
+	funcMng := functions.NewMng(db)
 
 	router := routing.NewRouter(cfg.Users, dialogMng, taskMng)
 
-	server := rest.NewApi("", taskMng, router, cfg.Debug, cfg.Secrets, cfg.HttpPort)
+	server := rest.NewApi("", taskMng, router, funcMng, cfg.Debug, cfg.Secrets, cfg.HttpPort)
 	err := server.Run()
 	if err != nil {
 		logger.Info(err.Error())
