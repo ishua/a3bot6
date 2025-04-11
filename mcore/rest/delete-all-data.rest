@@ -1,0 +1,4 @@
+@url = http://localhost:8080
+POST {{url}}/delete-all-data/
+content-type: application/json
+secret: test
