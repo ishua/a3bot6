@@ -8,7 +8,6 @@ class Tr:
     def add_torrent(self, torrent_url: str, folder_path: str) -> str:
         _download_dir = self.download_dir
         _download_dir += folder_path
-
         try:
             t = self.client.add_torrent(torrent=torrent_url, download_dir=_download_dir)
         except Exception as e:
@@ -17,6 +16,7 @@ class Tr:
         return str(t.id) + " " + t.name
 
     def list_torrents(self) -> str:
+
         try:
             tlist = self.client.get_torrents()
         except Exception as e:

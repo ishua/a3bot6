@@ -17,6 +17,8 @@ class McoreClient:
             print("health status code:", r.status_code)
             print("health body", r.request.body)
             return False
+
+        print("mcore health ok")
         return True
 
     def get_task(self) -> dict:
@@ -31,7 +33,7 @@ class McoreClient:
             return {}
 
         if r.status_code != 200:
-            print("can't connect to get-task")
+            print("can't connect to get-task, status: ", r.status_code)
             return {}
 
         res = r.json()
