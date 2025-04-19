@@ -23,7 +23,7 @@ def go_command(mclient: app.McoreClient,
     if command == "list":
         msg = t.list_torrents()
     if command == "del":
-        msg = t.list_torrents(torrent_id)
+        msg = t.del_torrent(torrent_id)
 
     mclient.report_task(task_id, 4, msg)
 
@@ -39,7 +39,6 @@ if __name__ == '__main__':
     print("Start to listen")
     while True:
         d = mclient.get_task()
-        print(d)
         if d.get("id") is None:
             time.sleep(1)  # be nice to the system :)
             continue
