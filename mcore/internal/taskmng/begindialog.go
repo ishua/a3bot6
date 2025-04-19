@@ -104,6 +104,7 @@ func (m *Mng) createTrTask(dialogId int64, text string, torrentUrl string) (stri
 	var folderPath string
 	var torrentId int
 	var err error
+	var command string
 
 	if w[1] == "add" {
 		if len(w) < 3 {
@@ -117,6 +118,7 @@ func (m *Mng) createTrTask(dialogId int64, text string, torrentUrl string) (stri
 		if len(torrentUrl) == 0 {
 			return "", fmt.Errorf("for tr add need torrent url")
 		}
+		command = w[1]
 	}
 
 	if w[1] == "del" {
@@ -127,10 +129,14 @@ func (m *Mng) createTrTask(dialogId int64, text string, torrentUrl string) (stri
 		if err != nil {
 			return "", fmt.Errorf("for tr del id is not an int")
 		}
+		command = w[1]
 	}
 
 	if w[1] == "help" {
 		return trHelpText, nil
+	}
+	if command == "" {
+		return "", fmt.Errorf("command not found")
 	}
 
 	task := schema.Task{
@@ -142,6 +148,7 @@ func (m *Mng) createTrTask(dialogId int64, text string, torrentUrl string) (stri
 				FolderPath: folderPath,
 				TorrentUrl: torrentUrl,
 				TorrentId:  torrentId,
+				Command:    command,
 			},
 		},
 	}
