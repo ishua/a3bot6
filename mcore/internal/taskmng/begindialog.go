@@ -132,6 +132,14 @@ func (m *Mng) createTrTask(dialogId int64, text string, torrentUrl string) (stri
 		command = w[1]
 	}
 
+	if w[1] == "list" {
+		if len(w) != 2 {
+			return "", fmt.Errorf("list command does not have arguments")
+		}
+
+		command = w[1]
+	}
+
 	if w[1] == "help" {
 		return trHelpText, nil
 	}

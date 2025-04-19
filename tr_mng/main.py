@@ -39,6 +39,7 @@ if __name__ == '__main__':
     print("Start to listen")
     while True:
         d = mclient.get_task()
+        print(d)
         if d.get("id") is None:
             time.sleep(1)  # be nice to the system :)
             continue
@@ -52,9 +53,9 @@ if __name__ == '__main__':
             cfg.trport,
             cfg.tdownloaddir,
             d["id"],
-            d["command"],
-            d["torrentUrl"],
-            d["folderPath"],
-            d["torrentId"]
+            d["taskData"]["tr"]["command"],
+            d["taskData"]["tr"]["torrentUrl"],
+            d["taskData"]["tr"]["folderPath"],
+            d["taskData"]["tr"]["torrentId"]
         ))
         process.start()
