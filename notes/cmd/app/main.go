@@ -12,7 +12,7 @@ type MyConfig struct {
 	RepoUrl         string `required:"true"`
 	RepoAccessToken string `env:"REPOACCESSTOKEN" required:"true"`
 	MCoreAddr       string `default:"http://127.0.0.1:8080" usage:"host and port for mcore"`
-	TBotSecret      string `default:"test" usage:"secret key for api"`
+	MCoreSecret     string `required:"true" usage:"secret key for api"`
 	Debug           bool   `default:"false" usage:"turn on debug mode"`
 }
 
@@ -24,7 +24,7 @@ func main() {
 
 	//config init
 	loader := aconfig.LoaderFor(&cfg, aconfig.Config{
-		Files: []string{"conf/mcore_config.yaml"},
+		Files: []string{"conf/notes_config.yaml"},
 		FileDecoders: map[string]aconfig.FileDecoder{
 			".yaml": aconfigyaml.New(),
 		},

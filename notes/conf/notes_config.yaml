@@ -1,0 +1,4 @@
+repo_url: "some github https repo"
+repo_access_token: "github token"
+m_core_addr: "https://localhost"
+m_core_secret: "test"
