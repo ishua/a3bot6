@@ -37,6 +37,7 @@ type TaskData struct {
 	Ytdl TaskYtdl `json:"ytdl"`
 	Msg  TaskMsg  `json:"msg"`
 	Tr   TaskTr   `json:"tr"`
+	Tn   TaskNote `json:"tn"`
 }
 
 type TaskMsg struct {
@@ -55,6 +56,20 @@ type TaskTr struct {
 	TorrentUrl string `json:"torrentUrl"`
 	FolderPath string `json:"folderPath"`
 	TorrentId  int    `json:"torrentId"`
+}
+
+type TaskNoteCmd string
+
+const (
+	TaskNoteCmdPull     TaskNoteCmd = "pull"
+	TaskNoteCmdAddDiary TaskNoteCmd = "add5bx"
+	TaskNoteCmdAddInbox TaskNoteCmd = "addInbox"
+	TaskNoteReadInbox   TaskNoteCmd = "readInbox"
+)
+
+type TaskNote struct {
+	Command TaskNoteCmd `json:"command"`
+	AddText string      `json:"addText"`
 }
 
 func (t *TaskData) Marshal() ([]byte, error) {

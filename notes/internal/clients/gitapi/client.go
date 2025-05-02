@@ -9,14 +9,15 @@ import (
 	"time"
 )
 
-type Repo struct {
+type GitClient struct {
 	*git.Repository
 	Token    string
 	Username string
 	Email    string
+	RepoPath string
 }
 
-func NewClient(path string, url string, token string, username string, email string) (*Repo, error) {
+func NewClient(path string, url string, token string, username string, email string) (*GitClient, error) {
 	r, err := git.PlainOpen(path)
 	if err != nil {
 		r, err = git.PlainClone(path, false, &git.CloneOptions{
@@ -32,10 +33,10 @@ func NewClient(path string, url string, token string, username string, email str
 		}
 	}
 
-	return &Repo{r, token, username, email}, nil
+	return &GitClient{r, token, username, email, path}, nil
 }
 
-func (r *Repo) Pull() error {
+func (r *GitClient) Pull() error {
 	w, err := r.Worktree()
 	if err != nil {
 		return fmt.Errorf("pull create worktree: %w", err)
@@ -54,7 +55,7 @@ func (r *Repo) Pull() error {
 	return err
 }
 
-func (r *Repo) CommitAndPush(path []string) error {
+func (r *GitClient) CommitAndPush(path []string) error {
 	w, err := r.Worktree()
 	if err != nil {
 		return fmt.Errorf("commitAndPush create worktree: %w", err)
@@ -89,4 +90,8 @@ func (r *Repo) CommitAndPush(path []string) error {
 	}
 
 	return nil
+}
+
+func (r *GitClient) GetRepoPath() string {
+	return r.RepoPath
 }

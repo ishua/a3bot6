@@ -1,0 +1,164 @@
+package domain
+
+import (
+	"bufio"
+	"fmt"
+	"github.com/ishua/a3bot6/mcore/pkg/schema"
+	"github.com/ishua/a3bot6/notes/internal/clients/gitapi"
+	"os"
+	"path/filepath"
+	"time"
+)
+
+const (
+	inboxPath = "main.markdown"
+	diaryPath = "Diary/5BX 2025.markdown"
+)
+
+type Model struct {
+	gitClient gitClient
+}
+
+type gitClient interface {
+	Pull() error
+	GetRepoPath() string
+	CommitAndPush(path []string) error
+}
+
+func NewModel(gitClient *gitapi.GitClient) *Model {
+	return &Model{
+		gitClient,
+	}
+}
+
+func (m *Model) Execute(command schema.TaskNoteCmd, addText string) (string, error) {
+	err := m.gitClient.Pull()
+	if err != nil {
+		return "", fmt.Errorf("execute pull repo: %w", err)
+	}
+	switch command {
+	case schema.TaskNoteCmdPull:
+		return "Successfully pulled", nil
+	case schema.TaskNoteReadInbox:
+		return m.readInbox()
+	case schema.TaskNoteCmdAddDiary:
+		return m.addAddDiary(addText)
+	case schema.TaskNoteCmdAddInbox:
+		return m.addAddInbox(addText)
+	}
+	return "", fmt.Errorf("notes.model unknown command: %s", command)
+}
+
+func (m *Model) addAddDiary(addText string) (string, error) {
+
+	diaryRows, err := m.readFile(diaryPath)
+	if err != nil {
+		return "", fmt.Errorf("read diary file: %w", err)
+	}
+	newStrings := []string{}
+
+	h2 := "## " + time.Now().Format("0201")
+	if len(diaryRows) == 0 || isH2NotExist(h2, diaryRows) {
+		newStrings = append(newStrings, h2)
+	}
+
+	newStrings = append(newStrings, "- "+addText)
+	err = m.addRowToFile(diaryPath, newStrings)
+	if err != nil {
+		return "", fmt.Errorf("add diary to file: %w", err)
+	}
+
+	err = m.gitClient.CommitAndPush([]string{diaryPath})
+	if err != nil {
+		return "", fmt.Errorf("commit and push diary: %w", err)
+	}
+
+	return "", nil
+}
+
+func isH2NotExist(h2 string, diaryRows []string) bool {
+	for i := len(diaryRows) - 1; i >= 0; i-- {
+		if diaryRows[i] == h2 {
+			return false
+		}
+	}
+	return true
+}
+
+func (m *Model) addAddInbox(addText string) (string, error) {
+	line := fmt.Sprintf("  - %s\n", addText)
+	err := m.addRowToFile(inboxPath, []string{line})
+	if err != nil {
+		return "", err
+	}
+
+	err = m.gitClient.CommitAndPush([]string{inboxPath})
+	if err != nil {
+		return "", fmt.Errorf("commit and push inbox: %w", err)
+	}
+
+	return "", nil
+}
+
+func (m *Model) readInbox() (string, error) {
+	rows, err := m.readFile(inboxPath)
+	if err != nil {
+		return "", err
+	}
+
+	var ret string
+
+	for idx, line := range rows {
+		if len(rows) == idx+1 {
+			ret += line
+			break
+		}
+		ret += fmt.Sprintf("%s\n", line)
+	}
+
+	return ret, nil
+}
+
+func (m *Model) readFile(filePath string) ([]string, error) {
+	path := filepath.Join(m.gitClient.GetRepoPath(), filePath)
+
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("model open inbox: %w", err)
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+
+	var ret []string
+	for scanner.Scan() {
+		ret = append(ret, scanner.Text())
+	}
+	err = scanner.Err()
+	if err != nil {
+		return nil, fmt.Errorf("model scaner: %w", err)
+	}
+
+	return ret, nil
+}
+
+func (m *Model) addRowToFile(filePath string, rows []string) error {
+	path := filepath.Join(m.gitClient.GetRepoPath(), filePath)
+
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return fmt.Errorf("addRowToFile OpenFile: %w", err)
+	}
+	for _, r := range rows {
+		_, err = f.WriteString(r + "\n")
+		if err != nil {
+			return fmt.Errorf("addRowToFile WriteString: %w", err)
+		}
+	}
+
+	err = f.Close()
+	if err != nil {
+		return fmt.Errorf("addRowToFile file.Close: %w", err)
+	}
+	return nil
+}
