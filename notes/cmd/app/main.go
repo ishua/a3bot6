@@ -1,13 +1,20 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/cristalhq/aconfig"
 	"github.com/cristalhq/aconfig/aconfigyaml"
 	"github.com/ishua/a3bot6/mcore/pkg/logger"
+	"github.com/ishua/a3bot6/mcore/pkg/mcoreclient"
 	"github.com/ishua/a3bot6/mcore/pkg/schema"
 	"github.com/ishua/a3bot6/notes/internal/clients/gitapi"
 	"github.com/ishua/a3bot6/notes/internal/domain"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 type MyConfig struct {
@@ -48,12 +55,20 @@ func main() {
 		logger.Fatal(err.Error())
 	}
 	model := domain.NewModel(gc)
-	s, err := model.Execute(schema.TaskNoteReadInbox, "")
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
 
-	fmt.Println(s)
-	fmt.Println("done")
+	mcore := mcoreclient.NewClient(cfg.MCoreAddr, cfg.MCoreSecret)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	mcore.ListeningTasks(ctx, schema.TaskTypeNote, model, time.Duration(1*time.Second))
+	log.Println("listen mcore")
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	// waiting signal for stop
+	sig := <-sigChan
+	log.Printf("Received signal: %s. Stopping...\n", sig)
+	cancel()
+	time.Sleep(1 * time.Second)
+	log.Println("Program has stopped.")
 
 }

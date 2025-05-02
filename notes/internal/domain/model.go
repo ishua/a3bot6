@@ -31,26 +31,28 @@ func NewModel(gitClient *gitapi.GitClient) *Model {
 	}
 }
 
-func (m *Model) Execute(command schema.TaskNoteCmd, addText string) (string, error) {
+func (m *Model) DoTask(task schema.Task) (string, error) {
 	err := m.gitClient.Pull()
 	if err != nil {
 		return "", fmt.Errorf("execute pull repo: %w", err)
 	}
-	switch command {
+	switch task.TaskData.Tn.Command {
 	case schema.TaskNoteCmdPull:
 		return "Successfully pulled", nil
 	case schema.TaskNoteReadInbox:
 		return m.readInbox()
 	case schema.TaskNoteCmdAddDiary:
-		return m.addAddDiary(addText)
+		return m.addAddDiary(task.TaskData.Tn.AddText)
 	case schema.TaskNoteCmdAddInbox:
-		return m.addAddInbox(addText)
+		return m.addAddInbox(task.TaskData.Tn.AddText)
 	}
-	return "", fmt.Errorf("notes.model unknown command: %s", command)
+	return "", fmt.Errorf("notes.model unknown command: %s", task.TaskData.Tn.Command)
 }
 
 func (m *Model) addAddDiary(addText string) (string, error) {
-
+	if len(addText) == 0 {
+		return "", fmt.Errorf("add text is empty")
+	}
 	diaryRows, err := m.readFile(diaryPath)
 	if err != nil {
 		return "", fmt.Errorf("read diary file: %w", err)
@@ -86,7 +88,10 @@ func isH2NotExist(h2 string, diaryRows []string) bool {
 }
 
 func (m *Model) addAddInbox(addText string) (string, error) {
-	line := fmt.Sprintf("  - %s\n", addText)
+	if len(addText) == 0 {
+		return "", fmt.Errorf("add text is empty")
+	}
+	line := fmt.Sprintf("  - %s", addText)
 	err := m.addRowToFile(inboxPath, []string{line})
 	if err != nil {
 		return "", err
