@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/ishua/a3bot6/mcore/pkg/logger"
 	"github.com/ishua/a3bot6/mcore/pkg/schema"
 	"io"
 	"log"
@@ -115,7 +116,9 @@ func (c *Client) ListeningTasks(ctx context.Context, taskType schema.TaskType, t
 					if task.Data.Id == 0 {
 						continue
 					}
+					logger.Debug("dotask run")
 					msg, err := taskWorker.DoTask(task.Data)
+					logger.Debug("dotask result:" + msg)
 					if err != nil {
 						strError := fmt.Sprintf("listeningTask: %s", err.Error())
 						log.Println(strError)

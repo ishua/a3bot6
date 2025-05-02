@@ -3,6 +3,7 @@ package domain
 import (
 	"bufio"
 	"fmt"
+	"github.com/ishua/a3bot6/mcore/pkg/logger"
 	"github.com/ishua/a3bot6/mcore/pkg/schema"
 	"github.com/ishua/a3bot6/notes/internal/clients/gitapi"
 	"os"
@@ -32,6 +33,7 @@ func NewModel(gitClient *gitapi.GitClient) *Model {
 }
 
 func (m *Model) DoTask(task schema.Task) (string, error) {
+	logger.Debug("starting task")
 	err := m.gitClient.Pull()
 	if err != nil {
 		return "", fmt.Errorf("execute pull repo: %w", err)
@@ -75,7 +77,7 @@ func (m *Model) addAddDiary(addText string) (string, error) {
 		return "", fmt.Errorf("commit and push diary: %w", err)
 	}
 
-	return "", nil
+	return "text add to diary", nil
 }
 
 func isH2NotExist(h2 string, diaryRows []string) bool {
@@ -102,7 +104,7 @@ func (m *Model) addAddInbox(addText string) (string, error) {
 		return "", fmt.Errorf("commit and push inbox: %w", err)
 	}
 
-	return "", nil
+	return "text add to inbox", nil
 }
 
 func (m *Model) readInbox() (string, error) {
