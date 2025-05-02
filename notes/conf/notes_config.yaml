@@ -1,4 +1,6 @@
-repo_url: "some github https repo"
-repo_access_token: "github token"
-m_core_addr: "https://localhost"
+git_url: "https://github.com/some url "
+git_access_token: "some token here"
+git_email: "some@some.some"
+m_core_addr: "http://mcore:8080"
 m_core_secret: "test"
+debug: true
