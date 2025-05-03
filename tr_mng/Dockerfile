@@ -11,4 +11,4 @@ ADD tr_mng/requirements.txt /srv
 WORKDIR /srv
 RUN pip install -r requirements.txt
 
-CMD ["python", "/srv/main.py"]
+CMD ["python", "-u", "/srv/main.py"]

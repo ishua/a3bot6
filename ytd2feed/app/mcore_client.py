@@ -42,6 +42,8 @@ class McoreClient:
             return {}
         if res['data'] is None:
             return {}
+
+        print(res['data'])
         return res['data']
 
     def report_task(self, task_id:int, status: int, text_msg: str) -> bool:
@@ -98,6 +100,7 @@ class McoreClient:
             return False
         if task["taskData"].get("health") is None:
             return False
-
-        self.report_task(task["id"], 3, "ytdl version: " + ytdl_verion + " is healthy: " + str(task["id"]))
+        if len(task["taskData"].get("health"))  == 0 :
+            return False
+        t = self.report_task(task["id"], 4, "ytdl version: " + ytdl_verion + " is healthy: " + str(task["id"]))
         return True

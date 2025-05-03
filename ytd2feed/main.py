@@ -44,13 +44,17 @@ if __name__ == '__main__':
         print("Mcore health failed")
         sys.exit()
     print("Start to listen")
+    i = 0
     while True:
         if cfg.debug:
-            print("-- listening -- ")
+            print("-- listening -- ", i)
+            i = i + 1
         d = m_client.get_task()
         if d.get("id") is None:
             time.sleep(1)  # be nice to the system :)
             continue
+        if cfg.debug:
+            print(d)
         if m_client.health_reported(d, ytdl_verion):
             continue
         if not m_client.check_and_report(d):
