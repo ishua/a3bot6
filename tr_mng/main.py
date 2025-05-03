@@ -42,6 +42,8 @@ if __name__ == '__main__':
         if d.get("id") is None:
             time.sleep(1)  # be nice to the system :)
             continue
+        if mclient.health_reported(d):
+            continue
         if not mclient.check_and_report(d):
             continue
 
