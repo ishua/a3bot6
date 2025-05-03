@@ -36,6 +36,10 @@ class Conf():
     @property
     def retries( self ) ->int: 
         return self.conf.get("retries", 2)
+
+    @property
+    def debug( self ) ->bool:
+        return self.conf.get("debug", False)
     
     def get_user_conf( self, user: str) -> dict:
         for u in self.users:
