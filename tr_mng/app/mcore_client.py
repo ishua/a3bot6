@@ -107,6 +107,8 @@ class McoreClient:
             return False
         if task["taskData"].get("health") is None:
             return False
+        if len(task["taskData"].get("health"))  == 0 :
+            return False
 
-        self.report_task(task["id"], 3, "tr_mng is healthy: " + str(task["id"]))
+        self.report_task(task["id"], 4, "tr_mng is healthy: " + str(task["id"]))
         return True
