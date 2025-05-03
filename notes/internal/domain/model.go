@@ -38,6 +38,9 @@ func (m *Model) DoTask(task schema.Task) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("execute pull repo: %w", err)
 	}
+	if len(task.TaskData.Health) > 0 {
+		return "note is healthy", nil
+	}
 	switch task.TaskData.Tn.Command {
 	case schema.TaskNoteCmdPull:
 		return "Successfully pulled", nil

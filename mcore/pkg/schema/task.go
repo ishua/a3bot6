@@ -34,10 +34,11 @@ type Task struct {
 }
 
 type TaskData struct {
-	Ytdl TaskYtdl `json:"ytdl"`
-	Msg  TaskMsg  `json:"msg"`
-	Tr   TaskTr   `json:"tr"`
-	Tn   TaskNote `json:"tn"`
+	Health string   `json:"health"`
+	Ytdl   TaskYtdl `json:"ytdl"`
+	Msg    TaskMsg  `json:"msg"`
+	Tr     TaskTr   `json:"tr"`
+	Tn     TaskNote `json:"tn"`
 }
 
 type TaskMsg struct {

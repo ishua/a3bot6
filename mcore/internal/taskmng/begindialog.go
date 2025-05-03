@@ -68,6 +68,8 @@ func (m *Mng) createReply(dialogId int64, userName string, userText string, file
 		return m.createTrTask(dialogId, userText, fileUrl)
 	case "/note", "n", "nd", "Nd", "n5", "N5", "ni", "Ni", "nir", "Nir":
 		return m.createNoteTask(dialogId, userText)
+	case "health", "/health":
+		return m.createHealth(dialogId)
 	}
 
 	return "", fmt.Errorf("command not found")
@@ -270,7 +272,7 @@ func (m *Mng) createNoteTask(dialogId int64, text string) (string, error) {
 		return "", fmt.Errorf("taskMng add task: %w", err)
 	}
 
-	return "task tr created", nil
+	return "task note created", nil
 }
 
 func parseSimplifications(words []string) ([]string, error) {
@@ -285,4 +287,30 @@ func parseSimplifications(words []string) ([]string, error) {
 		return append([]string{"/note", "inbox", "read"}, words[1:]...), nil
 	}
 	return nil, fmt.Errorf("synonyms command not found")
+}
+
+func (m *Mng) createHealth(dialogId int64) (string, error) {
+	taskTemolata := schema.Task{
+		DialogId: dialogId,
+		Status:   schema.TaskStatusCreate,
+		TaskData: schema.TaskData{
+			Health: "health",
+		},
+	}
+
+	taskTypes := []schema.TaskType{
+		schema.TaskTypeNote,
+		schema.TaskTypeYtdl,
+		// schema.TaskTypeTorrent,
+	}
+
+	for _, taskType := range taskTypes {
+		taskTemolata.Type = taskType
+		_, err := m.repo.AddTask(taskTemolata)
+		if err != nil {
+			return "", fmt.Errorf("health type=%d: %w", taskTypes, err)
+		}
+	}
+	return "tasks health created", nil
+
 }

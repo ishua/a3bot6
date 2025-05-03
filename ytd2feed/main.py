@@ -3,6 +3,7 @@ import os
 import sys
 import time
 from multiprocessing import Process
+from importlib.metadata import version
 
 def start_download(fc: app.FeedCreater,
                    format: str,
@@ -28,6 +29,8 @@ def start_download(fc: app.FeedCreater,
 
 if __name__ == '__main__':
     print("start app")
+    print(version('yt_dlp'))
+    sys.exit()
     cfg = app.Conf()
     print("mcore addr: {}, mcore_secret: {}, taskType: {}, "
           .format(cfg.mcore_addr, cfg.mcore_secret,cfg.task_type))
@@ -45,6 +48,8 @@ if __name__ == '__main__':
         d = m_client.get_task()
         if d.get("id") is None:
             time.sleep(1)  # be nice to the system :)
+            continue
+        if m_client.health_reported(d):
             continue
         if not m_client.check_and_report(d):
             continue

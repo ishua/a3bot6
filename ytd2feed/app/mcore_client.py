@@ -90,4 +90,14 @@ class McoreClient:
 
         return self.report_task(task["id"], 3, "ytdl get the job: " + str(task["id"]))
 
+    def health_reported(self, task: dict) -> bool:
+        if task.get("id") is None:
+            print("TODO crit need send a message task")
+            sys.exit(1)
+        if task.get("taskData") is None:
+            return False
+        if task["taskData"].get("health") is None:
+            return False
 
+        self.report_task(task["id"], 3, "ytdl is healthy: " + str(task["id"]))
+        return True
