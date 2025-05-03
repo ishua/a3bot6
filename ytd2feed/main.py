@@ -29,8 +29,8 @@ def start_download(fc: app.FeedCreater,
 
 if __name__ == '__main__':
     print("start app")
-    print(version('yt_dlp'))
-    sys.exit()
+    ytdl_verion = version('yt_dlp')
+    print("yt_dlp version", ytdl_verion)
     cfg = app.Conf()
     print("mcore addr: {}, mcore_secret: {}, taskType: {}, "
           .format(cfg.mcore_addr, cfg.mcore_secret,cfg.task_type))
@@ -49,7 +49,7 @@ if __name__ == '__main__':
         if d.get("id") is None:
             time.sleep(1)  # be nice to the system :)
             continue
-        if m_client.health_reported(d):
+        if m_client.health_reported(d, ytdl_verion):
             continue
         if not m_client.check_and_report(d):
             continue
