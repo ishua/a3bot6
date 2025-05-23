@@ -1,4 +1,4 @@
-FROM python:3.13
+FROM python:latest
 
 RUN apt-get -y update \
     && apt-get install -y ffmpeg  \
