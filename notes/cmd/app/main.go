@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/cristalhq/aconfig"
 	"github.com/cristalhq/aconfig/aconfigyaml"
 	"github.com/ishua/a3bot6/mcore/pkg/logger"
@@ -10,11 +16,6 @@ import (
 	"github.com/ishua/a3bot6/mcore/pkg/schema"
 	"github.com/ishua/a3bot6/notes/internal/clients/gitapi"
 	"github.com/ishua/a3bot6/notes/internal/domain"
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 type MyConfig struct {
@@ -25,6 +26,7 @@ type MyConfig struct {
 	MCoreAddr      string `default:"http://127.0.0.1:8080" usage:"host and port for mcore"`
 	MCoreSecret    string `required:"true" usage:"secret key for api"`
 	Debug          bool   `default:"false" usage:"turn on debug mode"`
+	DiaryPath      string `default:"Diary/5BX.markdown" usage:"file for diary"`
 }
 
 var (
@@ -54,7 +56,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	model := domain.NewModel(gc)
+	model := domain.NewModel(gc, cfg.DiaryPath)
 
 	mcore := mcoreclient.NewClient(cfg.MCoreAddr, cfg.MCoreSecret)
 	ctx, cancel := context.WithCancel(context.Background())

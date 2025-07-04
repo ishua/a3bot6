@@ -3,21 +3,23 @@ package domain
 import (
 	"bufio"
 	"fmt"
-	"github.com/ishua/a3bot6/mcore/pkg/logger"
-	"github.com/ishua/a3bot6/mcore/pkg/schema"
-	"github.com/ishua/a3bot6/notes/internal/clients/gitapi"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/ishua/a3bot6/mcore/pkg/logger"
+	"github.com/ishua/a3bot6/mcore/pkg/schema"
+	"github.com/ishua/a3bot6/notes/internal/clients/gitapi"
 )
 
 const (
 	inboxPath = "main.markdown"
-	diaryPath = "Diary/5BX 2025.markdown"
+	// diaryPath = "Diary/5BX 2025.markdown"
 )
 
 type Model struct {
 	gitClient gitClient
+	diaryPath string
 }
 
 type gitClient interface {
@@ -26,9 +28,10 @@ type gitClient interface {
 	CommitAndPush(path []string) error
 }
 
-func NewModel(gitClient *gitapi.GitClient) *Model {
+func NewModel(gitClient *gitapi.GitClient, diaryPath string) *Model {
 	return &Model{
 		gitClient,
+		diaryPath,
 	}
 }
 
@@ -58,7 +61,7 @@ func (m *Model) addAddDiary(addText string) (string, error) {
 	if len(addText) == 0 {
 		return "", fmt.Errorf("add text is empty")
 	}
-	diaryRows, err := m.readFile(diaryPath)
+	diaryRows, err := m.readFile(m.diaryPath)
 	if err != nil {
 		return "", fmt.Errorf("read diary file: %w", err)
 	}
@@ -70,12 +73,12 @@ func (m *Model) addAddDiary(addText string) (string, error) {
 	}
 
 	newStrings = append(newStrings, "- "+addText)
-	err = m.addRowToFile(diaryPath, newStrings)
+	err = m.addRowToFile(m.diaryPath, newStrings)
 	if err != nil {
 		return "", fmt.Errorf("add diary to file: %w", err)
 	}
 
-	err = m.gitClient.CommitAndPush([]string{diaryPath})
+	err = m.gitClient.CommitAndPush([]string{m.diaryPath})
 	if err != nil {
 		return "", fmt.Errorf("commit and push diary: %w", err)
 	}
