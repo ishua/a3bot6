@@ -176,5 +176,5 @@ func (m *Model) addRowToFile(filePath string, rows []string) error {
 func getDiaryPath() string {
 	now := time.Now()
 	quarter := (int(now.Month())-1)/3 + 1 // 1,2,3,4
-	return fmt.Sprintf("5BX %d%02d", now.Year(), quarter)
+	return fmt.Sprintf("5BX %d%02d.markdown", now.Year(), quarter)
 }
