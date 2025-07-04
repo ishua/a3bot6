@@ -26,7 +26,6 @@ type MyConfig struct {
 	MCoreAddr      string `default:"http://127.0.0.1:8080" usage:"host and port for mcore"`
 	MCoreSecret    string `required:"true" usage:"secret key for api"`
 	Debug          bool   `default:"false" usage:"turn on debug mode"`
-	DiaryPath      string `default:"Diary/5BX.markdown" usage:"file for diary"`
 }
 
 var (
@@ -56,7 +55,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	model := domain.NewModel(gc, cfg.DiaryPath)
+	model := domain.NewModel(gc)
 
 	mcore := mcoreclient.NewClient(cfg.MCoreAddr, cfg.MCoreSecret)
 	ctx, cancel := context.WithCancel(context.Background())

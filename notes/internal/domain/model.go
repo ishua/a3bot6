@@ -14,12 +14,10 @@ import (
 
 const (
 	inboxPath = "main.markdown"
-	// diaryPath = "Diary/5BX 2025.markdown"
 )
 
 type Model struct {
 	gitClient gitClient
-	diaryPath string
 }
 
 type gitClient interface {
@@ -28,10 +26,9 @@ type gitClient interface {
 	CommitAndPush(path []string) error
 }
 
-func NewModel(gitClient *gitapi.GitClient, diaryPath string) *Model {
+func NewModel(gitClient *gitapi.GitClient) *Model {
 	return &Model{
 		gitClient,
-		diaryPath,
 	}
 }
 
@@ -61,7 +58,7 @@ func (m *Model) addAddDiary(addText string) (string, error) {
 	if len(addText) == 0 {
 		return "", fmt.Errorf("add text is empty")
 	}
-	diaryRows, err := m.readFile(m.diaryPath)
+	diaryRows, err := m.readFile(getDiaryPath())
 	if err != nil {
 		return "", fmt.Errorf("read diary file: %w", err)
 	}
@@ -73,12 +70,12 @@ func (m *Model) addAddDiary(addText string) (string, error) {
 	}
 
 	newStrings = append(newStrings, "- "+addText)
-	err = m.addRowToFile(m.diaryPath, newStrings)
+	err = m.addRowToFile(getDiaryPath(), newStrings)
 	if err != nil {
 		return "", fmt.Errorf("add diary to file: %w", err)
 	}
 
-	err = m.gitClient.CommitAndPush([]string{m.diaryPath})
+	err = m.gitClient.CommitAndPush([]string{getDiaryPath()})
 	if err != nil {
 		return "", fmt.Errorf("commit and push diary: %w", err)
 	}
@@ -174,4 +171,10 @@ func (m *Model) addRowToFile(filePath string, rows []string) error {
 		return fmt.Errorf("addRowToFile file.Close: %w", err)
 	}
 	return nil
+}
+
+func getDiaryPath() string {
+	now := time.Now()
+	quarter := (int(now.Month())-1)/3 + 1 // 1,2,3,4
+	return fmt.Sprintf("5BX %d%02d", now.Year(), quarter)
 }
