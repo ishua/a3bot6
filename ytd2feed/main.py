@@ -26,7 +26,6 @@ def start_download(fc: app.FeedCreater,
         print("Error")
 
 
-
 if __name__ == '__main__':
     print("start app")
     ytdl_verion = version('yt_dlp')
