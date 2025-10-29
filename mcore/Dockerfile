@@ -7,7 +7,7 @@ ADD . .
 RUN CGO_ENABLED=1 GOOS=linux \
 go build -ldflags '-extldflags "-static"' -o app /build/mcore/cmd/app
 
-FROM alpine:3.21
+FROM alpine:3.22
 RUN apk add -U tzdata
 COPY --from=build /etc/ssl/certs/ca-certificates.crt \
 /etc/ssl/certs/ca-certificates.crt
