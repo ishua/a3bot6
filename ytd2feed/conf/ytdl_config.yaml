@@ -1,4 +1,4 @@
-version: 0.6.13
+version: 0.6.14
 path2content: data
 url2content: http://localhost:8080/
 mcoreSecret: test
