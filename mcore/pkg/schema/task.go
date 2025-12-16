@@ -13,6 +13,7 @@ const (
 	TaskTypeRest
 	TaskTypeNote
 	TaskTypeTorrent
+	TaskTypeFinance
 )
 
 type TaskStatus int
@@ -34,11 +35,12 @@ type Task struct {
 }
 
 type TaskData struct {
-	Health string   `json:"health"`
-	Ytdl   TaskYtdl `json:"ytdl"`
-	Msg    TaskMsg  `json:"msg"`
-	Tr     TaskTr   `json:"tr"`
-	Tn     TaskNote `json:"tn"`
+	Health string      `json:"health"`
+	Ytdl   TaskYtdl    `json:"ytdl"`
+	Msg    TaskMsg     `json:"msg"`
+	Tr     TaskTr      `json:"tr"`
+	Tn     TaskNote    `json:"tn"`
+	Fin    FinanceTask `json:"fin"`
 }
 
 type TaskMsg struct {
@@ -57,6 +59,10 @@ type TaskTr struct {
 	TorrentUrl string `json:"torrentUrl"`
 	FolderPath string `json:"folderPath"`
 	TorrentId  int    `json:"torrentId"`
+}
+
+type FinanceTask struct {
+	Command string FinanceTask
 }
 
 type TaskNoteCmd string

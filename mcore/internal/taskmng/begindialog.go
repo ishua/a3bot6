@@ -2,8 +2,9 @@ package taskmng
 
 import (
 	"fmt"
-	"github.com/ishua/a3bot6/mcore/pkg/schema"
 	"strings"
+
+	"github.com/ishua/a3bot6/mcore/pkg/schema"
 )
 
 const trHelpText = ` This is help for /torrent command
@@ -27,6 +28,7 @@ const helpCommon = ` My commands:
 - /ping
 - /y2d
 - /torrent
+- /finance
 `
 
 func (m *Mng) ProcessDialogBegin(dialogId int64) (string, error) {
@@ -68,6 +70,8 @@ func (m *Mng) createReply(dialogId int64, userName string, userText string, file
 		return m.createNoteTask(dialogId, userText)
 	case "health", "/health":
 		return m.createHealth(dialogId)
+	case "/finance", "f", "F":
+		return m.createFinanceTask(dialogId, userText)
 	case "/free":
 		return m.createFreeTask(dialogId)
 	}
