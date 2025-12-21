@@ -62,7 +62,7 @@ type TaskTr struct {
 }
 
 type FinanceTask struct {
-	Command string FinanceTask
+	Command string `json:"command"`
 }
 
 type TaskNoteCmd string
