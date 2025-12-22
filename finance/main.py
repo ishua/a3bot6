@@ -1,29 +1,20 @@
 #!/usr/bin/python3
-import app
 import os
 import sys
 from multiprocessing import Process
 import time
+import app
 
 def go_command(mclient: app.McoreClient,
-               trhost: str,
-               trport: int,
-               tdownloaddir: str,
                task_id: int,
-               command: str,
-               torrent_url: str,
-               folder_path: str,
-               torrent_id: int):
-    print("go_command trhost: {}, trport: {}, tdownloaddir: {}, task_id: {}, command: {}, torrent_url: {}, folder_path: {}, torrent_id: {}"
-          .format(trhost, trport, tdownloaddir, task_id, command, torrent_url, folder_path, torrent_id))
-    t = app.Tr(trhost, trport, tdownloaddir)
-    msg = ""
-    if command == "add":
-        msg = t.add_torrent(torrent_url, folder_path)
-    if command == "list":
-        msg = t.list_torrents()
-    if command == "del":
-        msg = t.del_torrent(torrent_id)
+               command: str
+               ):
+    
+    print("go_command task_id: {}, command: {}"
+          .format(task_id, command))
+    
+    msg = "done"
+
 
     mclient.report_task(task_id, 4, msg)
 
@@ -50,13 +41,7 @@ if __name__ == '__main__':
         print("start to process taskid:",str(d["id"]), "command:", d["taskData"]["fin"]["command"])
         process = Process(target=go_command, args=(
             mclient,
-            cfg.trhost,
-            cfg.trport,
-            cfg.tdownloaddir,
             d["id"],
-            d["taskData"]["tr"]["command"],
-            d["taskData"]["tr"]["torrentUrl"],
-            d["taskData"]["tr"]["folderPath"],
-            d["taskData"]["tr"]["torrentId"]
+            d["taskData"]["fin"]["command"]
         ))
         process.start()
