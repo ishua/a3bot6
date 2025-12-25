@@ -2,11 +2,11 @@ FROM python:3.13
 
 RUN mkdir /srv/data
 
-ADD tr_mng/app /srv
-COPY tr_mng/app/ /srv/app/
-ADD tr_mng/main.py /srv
+ADD finance/app /srv
+COPY finance/app/ /srv/app/
+ADD finance/main.py /srv
 
-ADD tr_mng/requirements.txt /srv
+ADD finance/requirements.txt /srv
 
 WORKDIR /srv
 RUN pip install -r requirements.txt

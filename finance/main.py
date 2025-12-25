@@ -4,13 +4,14 @@ import sys
 from multiprocessing import Process
 import time
 import app
+from app.logger import logger, init_logger
 
 def go_command(mclient: app.McoreClient,
                task_id: int,
                command: str
                ):
     
-    print("go_command task_id: {}, command: {}"
+    logger.info("go_command task_id: {}, command: {}"
           .format(task_id, command))
     
     msg = "done"
@@ -24,10 +25,12 @@ if __name__ == '__main__':
     cfg = app.Conf()
     print("mcore addr: {}, mcore_secret: {}, taskType: {}"
           .format(cfg.mcore_addr, cfg.mcore_secret,cfg.task_type))
+    
+    init_logger(cfg.log_level)
 
     mclient = app.McoreClient(cfg.mcore_addr, cfg.task_type, cfg.mcore_secret)
     mclient.health()
-    print("Start to listen")
+    logger.info("Start to listen")
     while True:
         d = mclient.get_task()
         if d.get("id") is None:
@@ -38,7 +41,7 @@ if __name__ == '__main__':
         if not mclient.check_and_report(d):
             continue
 
-        print("start to process taskid:",str(d["id"]), "command:", d["taskData"]["fin"]["command"])
+        logger.info("start to process taskid:",str(d["id"]), "command:", d["taskData"]["fin"]["command"])
         process = Process(target=go_command, args=(
             mclient,
             d["id"],
