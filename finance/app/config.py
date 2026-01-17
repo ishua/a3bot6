@@ -28,6 +28,10 @@ class Conf():
     def log_level(self) -> str:
         return self.conf.get("logLevel", "INFO")
     
+    @property
+    def poll_interval(self) -> int:
+        return self.conf.get("pollInterval", 60)
+    
     @property 
     def account_mapping(self) -> dict:
         return self.conf.get("accountMapping", {})

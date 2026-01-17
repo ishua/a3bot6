@@ -3,17 +3,14 @@
 """
 import logging
 
-def init_logger(log_level: str) -> logging.Logger:
-    """
-    Инициализирует логгер с указанным уровнем логирования
+# Создаём логгер сразу, но без handler'ов
+logger = logging.getLogger('finance')
+
+def init_logger(log_level: str = 'INFO') -> None:
+    """Инициализировать логгер. Вызывать один раз в main."""
+    if logger.handlers:
+        return
     
-    Args:
-        log_level: Уровень логирования ('DEBUG', 'INFO', 'ERROR', etc)
-        
-    Returns:
-        Настроенный logger объект
-    """
-    logger = logging.getLogger('finance')
     logger.setLevel(logging.DEBUG)
     
     formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
@@ -23,8 +20,3 @@ def init_logger(log_level: str) -> logging.Logger:
     console_handler.setFormatter(formatter)
     
     logger.addHandler(console_handler)
-    
-    return logger
-
-
-logger = init_logger('INFO')
