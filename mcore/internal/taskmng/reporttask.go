@@ -2,6 +2,7 @@ package taskmng
 
 import (
 	"fmt"
+
 	"github.com/ishua/a3bot6/mcore/pkg/schema"
 )
 
@@ -38,6 +39,10 @@ func (m *Mng) ReportTask(taskId int64, status schema.TaskStatus, msg string) err
 	}
 
 	if task.Type == schema.TaskTypeMsg {
+		return nil
+	}
+
+	if msg == "" {
 		return nil
 	}
 
