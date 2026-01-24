@@ -23,8 +23,12 @@ func (m *Mng) createFinanceTask(dialogId int64, userText string) (string, error)
 	}
 
 	switch words[1] {
-	case "run":
+	case "run", "r":
 		task.TaskData.Fin.Command = "run"
+	case "load", "l":
+		task.TaskData.Fin.Command = "load"
+	case "transactions", "t":
+		task.TaskData.Fin.Command = "transactions"
 	default:
 		return "", fmt.Errorf("unknown command")
 	}
