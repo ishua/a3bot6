@@ -2,8 +2,9 @@ package taskmng
 
 import (
 	"fmt"
-	"github.com/ishua/a3bot6/mcore/pkg/schema"
 	"strings"
+
+	"github.com/ishua/a3bot6/mcore/pkg/schema"
 )
 
 func (m *Mng) createNoteTask(dialogId int64, text string) (string, error) {
@@ -30,6 +31,9 @@ func (m *Mng) createNoteTask(dialogId int64, text string) (string, error) {
 	switch words[1] {
 	case "diary":
 		{
+			if len(words) < 3 {
+				return "", fmt.Errorf("for diary need label")
+			}
 			if !(words[2] == "entry" || words[2] == "5bx") {
 				return "", fmt.Errorf("for diary need label")
 			}
@@ -43,9 +47,13 @@ func (m *Mng) createNoteTask(dialogId int64, text string) (string, error) {
 			switch words[2] {
 			case "add":
 				{
+					var addText string
+					if len(words) > 3 {
+						addText = strings.Join(words[3:], " ")
+					}
 					task.TaskData.Tn = schema.TaskNote{
 						Command: schema.TaskNoteCmdAddInbox,
-						AddText: strings.Join(words[3:], " "),
+						AddText: addText,
 					}
 				}
 			case "read":

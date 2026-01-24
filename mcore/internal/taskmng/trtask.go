@@ -2,9 +2,10 @@ package taskmng
 
 import (
 	"fmt"
-	"github.com/ishua/a3bot6/mcore/pkg/schema"
 	"strconv"
 	"strings"
+
+	"github.com/ishua/a3bot6/mcore/pkg/schema"
 )
 
 func (m *Mng) createTrTask(dialogId int64, text string, torrentUrl string) (string, error) {
