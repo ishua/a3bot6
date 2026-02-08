@@ -1,0 +1,15 @@
+synology:
+  url: "http://192.168.1.3:5000"
+  username: "bot"
+  password: "" 
+  
+
+  paths:
+    movie: "/downloads/movie"
+    cartoon: "/downloads/cartoons"
+    shows: "/downloads/shows"
+    audiobook: "/downloads/audiobooks"
+    other: "/downloads/other"
+    shows_cartoons: "/downloads/shows_cartoons"
+
+debug: true

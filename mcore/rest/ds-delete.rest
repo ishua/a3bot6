@@ -6,6 +6,6 @@ secret: test
 {
   "chatId": 1,
   "userName": "testUser",
-  "text": "/ds del task_123",
+  "text": "/ds del 15",
   "messageId": 16
 }
