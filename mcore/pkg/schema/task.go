@@ -14,6 +14,7 @@ const (
 	TaskTypeNote
 	TaskTypeTorrent
 	TaskTypeFinance
+	TaskTypeSyno
 )
 
 type TaskStatus int
@@ -41,6 +42,7 @@ type TaskData struct {
 	Tr     TaskTr      `json:"tr"`
 	Tn     TaskNote    `json:"tn"`
 	Fin    FinanceTask `json:"fin"`
+	Syno   TaskSyno    `json:"syno"`
 }
 
 type TaskMsg struct {

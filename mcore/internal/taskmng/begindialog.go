@@ -29,6 +29,7 @@ const helpCommon = ` My commands:
 - /y2d
 - /torrent
 - /finance
+- /ds
 `
 
 func (m *Mng) ProcessDialogBegin(dialogId int64) (string, error) {
@@ -74,6 +75,8 @@ func (m *Mng) createReply(dialogId int64, userName string, userText string, file
 		return m.createFinanceTask(dialogId, userText)
 	case "/free":
 		return m.createFreeTask(dialogId)
+	case "/ds", "ds", "dsm", "Dsm", "dsc", "Dsc", "dss", "Dss", "dsa", "Dsa", "dso", "Dso", "dscs", "Dscs", "dsl", "Dsl":
+		return m.createSynoTask(dialogId, userText, fileUrl)
 	}
 
 	return "", fmt.Errorf("command not found")
