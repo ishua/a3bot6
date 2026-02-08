@@ -1,9 +1,9 @@
 synology:
   url: "http://192.168.1.3:5000"
   username: "bot"
-  password: "" 
+  password: ""  # замените на реальный пароль
   
-
+  # Маппинг категорий на пути в Download Station
   paths:
     movie: "/downloads/movie"
     cartoon: "/downloads/cartoons"
