@@ -5,11 +5,11 @@ synology:
   
   # Маппинг категорий на пути в Download Station
   paths:
-    movie: "/downloads/movie"
-    cartoon: "/downloads/cartoons"
-    shows: "/downloads/shows"
-    audiobook: "/downloads/audiobooks"
-    other: "/downloads/other"
-    shows_cartoons: "/downloads/shows_cartoons"
+    movie: "downloads/movie"
+    cartoon: "downloads/video/movies/cartoons"
+    shows: "downloads/video/shows/main"
+    audiobook: "downloads/audiobook"
+    other: "downloads/other"
+    shows_cartoons: "downloads/video/shows/cartoons"
 
 debug: true
