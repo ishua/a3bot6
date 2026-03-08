@@ -91,7 +91,7 @@ func (c *Client) ReportTask(taskReq schema.ReportTaskReq) (schema.Req, error) {
 }
 
 type taskWorker interface {
-	DoTask(task schema.Task) (string, error)
+	DoTask(task schema.Task) schema.ReportTaskReq
 }
 
 func (c *Client) ListeningTasks(ctx context.Context, taskType schema.TaskType, taskWorker taskWorker, repeatTime time.Duration) {
@@ -117,25 +117,16 @@ func (c *Client) ListeningTasks(ctx context.Context, taskType schema.TaskType, t
 						continue
 					}
 					logger.Debug("dotask run")
-					msg, err := taskWorker.DoTask(task.Data)
-					logger.Debug("dotask result:" + msg)
-					if err != nil {
-						strError := fmt.Sprintf("listeningTask: %s", err.Error())
-						log.Println(strError)
-						_, err = c.ReportTask(schema.ReportTaskReq{
-							TaskId:  task.Data.Id,
-							Status:  schema.TaskStatusError,
-							TextMsg: strError,
-						})
-						if err != nil {
-							log.Printf("can't report err: %s", err.Error())
-						}
-					}
-					_, _ = c.ReportTask(schema.ReportTaskReq{
+					result := taskWorker.DoTask(task.Data)
+					logger.Debug("dotask result:" + result.TextMsg)
+					_, err = c.ReportTask(schema.ReportTaskReq{
 						TaskId:  task.Data.Id,
-						Status:  schema.TaskStatusDone,
-						TextMsg: msg,
+						Status:  result.Status,
+						TextMsg: result.TextMsg,
 					})
+					if err != nil {
+						log.Printf("can't report: %s", err.Error())
+					}
 				}
 			}
 		}

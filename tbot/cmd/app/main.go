@@ -74,15 +74,27 @@ func newTgClient(bot *tgbotapi.BotAPI, mcore *mcoreclient.Client) *tgClient {
 	return &tgClient{bot: bot, mcore: mcore}
 }
 
-func (tg *tgClient) DoTask(task schema.Task) (string, error) {
+func (tg *tgClient) DoTask(task schema.Task) schema.ReportTaskReq {
 	if task.Type != schema.TaskTypeMsg {
-		return "", fmt.Errorf("dotask only for TaskTypeMsg")
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: "dotask only for TaskTypeMsg",
+		}
 	}
 	if task.TaskData.Msg.ChatId == 0 {
-		return "", fmt.Errorf("chatId in taskType Msg is 0")
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: "chatId in taskType Msg is 0",
+		}
 	}
 	if len(task.TaskData.Msg.Text) == 0 {
-		return "", fmt.Errorf("text in taskType Msg is 0")
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: "text in taskType Msg is 0",
+		}
 	}
 	msg := tgbotapi.NewMessage(task.TaskData.Msg.ChatId, task.TaskData.Msg.Text)
 	msg.ParseMode = "html"
@@ -90,9 +102,17 @@ func (tg *tgClient) DoTask(task schema.Task) (string, error) {
 
 	_, err := tg.bot.Send(msg)
 	if err != nil {
-		return "", fmt.Errorf("something went wrong when tg sending messages %s", err.Error())
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: fmt.Sprintf("tg sending failed: %s", err.Error()),
+		}
 	}
-	return "", nil
+	return schema.ReportTaskReq{
+		TaskId:  task.Id,
+		Status:  schema.TaskStatusDone,
+		TextMsg: "message sent",
+	}
 }
 
 func (tg *tgClient) ListeningTg(ctx context.Context) {
@@ -133,7 +153,7 @@ func (tg *tgClient) ListeningTg(ctx context.Context) {
 					})
 
 					if quickMsg.Error != "" {
-						_, err := tg.DoTask(schema.Task{
+						tg.DoTask(schema.Task{
 							Type: schema.TaskTypeMsg,
 							TaskData: schema.TaskData{
 								Msg: schema.TaskMsg{
@@ -143,21 +163,15 @@ func (tg *tgClient) ListeningTg(ctx context.Context) {
 								},
 							},
 						})
-						if err != nil {
-							log.Printf("quickMsg error: %s", err.Error())
-						}
 						continue
 					}
 					if quickMsg.Data.ChatId != 0 {
-						_, err := tg.DoTask(schema.Task{
+						tg.DoTask(schema.Task{
 							Type: schema.TaskTypeMsg,
 							TaskData: schema.TaskData{
 								Msg: quickMsg.Data,
 							},
 						})
-						if err != nil {
-							log.Printf("quickMsg error: %s", err.Error())
-						}
 					}
 				}
 

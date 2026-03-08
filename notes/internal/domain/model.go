@@ -32,35 +32,60 @@ func NewModel(gitClient *gitapi.GitClient) *Model {
 	}
 }
 
-func (m *Model) DoTask(task schema.Task) (string, error) {
+func (m *Model) DoTask(task schema.Task) schema.ReportTaskReq {
 	logger.Debug("starting task")
 	err := m.gitClient.Pull()
 	if err != nil {
-		return "", fmt.Errorf("execute pull repo: %w", err)
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: fmt.Sprintf("execute pull repo: %v", err),
+		}
 	}
 	if len(task.TaskData.Health) > 0 {
-		return "note is healthy", nil
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusDone,
+			TextMsg: "note is healthy",
+		}
 	}
 	switch task.TaskData.Tn.Command {
 	case schema.TaskNoteCmdPull:
-		return "Successfully pulled", nil
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusDone,
+			TextMsg: "Successfully pulled",
+		}
 	case schema.TaskNoteReadInbox:
-		return m.readInbox()
+		return m.readInbox(task.Id)
 	case schema.TaskNoteCmdAddDiary:
-		return m.addAddDiary(task.TaskData.Tn.AddText)
+		return m.addAddDiary(task)
 	case schema.TaskNoteCmdAddInbox:
-		return m.addAddInbox(task.TaskData.Tn.AddText)
+		return m.addAddInbox(task)
 	}
-	return "", fmt.Errorf("notes.model unknown command: %s", task.TaskData.Tn.Command)
+	return schema.ReportTaskReq{
+		TaskId:  task.Id,
+		Status:  schema.TaskStatusError,
+		TextMsg: fmt.Sprintf("notes.model unknown command: %s", task.TaskData.Tn.Command),
+	}
 }
 
-func (m *Model) addAddDiary(addText string) (string, error) {
+func (m *Model) addAddDiary(task schema.Task) schema.ReportTaskReq {
+	addText := task.TaskData.Tn.AddText
 	if len(addText) == 0 {
-		return "", fmt.Errorf("add text is empty")
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: "add text is empty",
+		}
 	}
 	diaryRows, err := m.readFile(getDiaryPath())
 	if err != nil {
-		return "", fmt.Errorf("read diary file: %w", err)
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: fmt.Sprintf("read diary file: %v", err),
+		}
 	}
 	newStrings := []string{}
 
@@ -72,15 +97,27 @@ func (m *Model) addAddDiary(addText string) (string, error) {
 	newStrings = append(newStrings, "- "+addText)
 	err = m.addRowToFile(getDiaryPath(), newStrings)
 	if err != nil {
-		return "", fmt.Errorf("add diary to file: %w", err)
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: fmt.Sprintf("add diary to file: %v", err),
+		}
 	}
 
 	err = m.gitClient.CommitAndPush([]string{getDiaryPath()})
 	if err != nil {
-		return "", fmt.Errorf("commit and push diary: %w", err)
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: fmt.Sprintf("commit and push diary: %v", err),
+		}
 	}
 
-	return "text add to diary", nil
+	return schema.ReportTaskReq{
+		TaskId:  task.Id,
+		Status:  schema.TaskStatusDone,
+		TextMsg: "text add to diary",
+	}
 }
 
 func isH2NotExist(h2 string, diaryRows []string) bool {
@@ -92,28 +129,49 @@ func isH2NotExist(h2 string, diaryRows []string) bool {
 	return true
 }
 
-func (m *Model) addAddInbox(addText string) (string, error) {
+func (m *Model) addAddInbox(task schema.Task) schema.ReportTaskReq {
+	addText := task.TaskData.Tn.AddText
 	if len(addText) == 0 {
-		return "", fmt.Errorf("add text is empty")
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: "add text is empty",
+		}
 	}
 	line := fmt.Sprintf("  - %s", addText)
 	err := m.addRowToFile(inboxPath, []string{line})
 	if err != nil {
-		return "", err
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: fmt.Sprintf("add to inbox: %v", err),
+		}
 	}
 
 	err = m.gitClient.CommitAndPush([]string{inboxPath})
 	if err != nil {
-		return "", fmt.Errorf("commit and push inbox: %w", err)
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: fmt.Sprintf("commit and push inbox: %v", err),
+		}
 	}
 
-	return "text add to inbox", nil
+	return schema.ReportTaskReq{
+		TaskId:  task.Id,
+		Status:  schema.TaskStatusDone,
+		TextMsg: "text add to inbox",
+	}
 }
 
-func (m *Model) readInbox() (string, error) {
+func (m *Model) readInbox(taskId int64) schema.ReportTaskReq {
 	rows, err := m.readFile(inboxPath)
 	if err != nil {
-		return "", err
+		return schema.ReportTaskReq{
+			TaskId:  taskId,
+			Status:  schema.TaskStatusError,
+			TextMsg: fmt.Sprintf("read inbox: %v", err),
+		}
 	}
 
 	var ret string
@@ -126,7 +184,11 @@ func (m *Model) readInbox() (string, error) {
 		ret += fmt.Sprintf("%s\n", line)
 	}
 
-	return ret, nil
+	return schema.ReportTaskReq{
+		TaskId:  taskId,
+		Status:  schema.TaskStatusDone,
+		TextMsg: ret,
+	}
 }
 
 func (m *Model) readFile(filePath string) ([]string, error) {
