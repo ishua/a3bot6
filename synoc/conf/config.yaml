@@ -1,7 +1,7 @@
 synology:
   url: "http://192.168.1.3:5000"
   username: "bot"
-  password: ""  # замените на реальный пароль
+  password: "yWB33lpB123"  # замените на реальный пароль
   
   # Маппинг категорий на пути в Download Station
   paths:
@@ -11,5 +11,9 @@ synology:
     audiobook: "downloads/audiobook"
     other: "downloads/other"
     shows_cartoons: "downloads/video/shows/cartoons"
+
+mcore:
+  addr: "https://t.a3b.me/api/"
+  secret: "tokenOnlyForTest20260117_fdfhkflgkh#djksdfDDs21"
 
 debug: true

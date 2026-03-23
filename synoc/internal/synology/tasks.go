@@ -101,7 +101,7 @@ func (c *Client) ListTasks() ([]Task, error) {
 }
 
 // CreateTask создает новую задачу загрузки
-func (c *Client) CreateTask(uri, destination string) (string, error) {
+func (c *Client) CreateTask(uri, destination, filename string) (string, error) {
 	if !c.IsAuthenticated() {
 		return "", fmt.Errorf("not authenticated")
 	}
@@ -114,6 +114,10 @@ func (c *Client) CreateTask(uri, destination string) (string, error) {
 		"uri":         {uri},
 		"destination": {destination},
 		"_sid":        {c.sid},
+	}
+
+	if filename != "" {
+		params["filename"] = []string{filename}
 	}
 
 	resp, err := c.http.Post(apiURL, "application/x-www-form-urlencoded", bytes.NewBufferString(params.Encode()))

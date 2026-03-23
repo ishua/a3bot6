@@ -3,11 +3,12 @@ package main
 import (
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/cristalhq/aconfig"
 	"github.com/cristalhq/aconfig/aconfigyaml"
-	"github.com/ishua/a3bot6/syno-worker/internal/synology"
+	"github.com/ishua/a3bot6/mcore/pkg/schema"
+	"github.com/ishua/a3bot6/synoc/internal/synology"
+	"github.com/ishua/a3bot6/synoc/internal/worker"
 )
 
 type Config struct {
@@ -21,7 +22,6 @@ type Config struct {
 }
 
 func main() {
-	// Загрузка конфига
 	var cfg Config
 	loader := aconfig.LoaderFor(&cfg, aconfig.Config{
 		Files: []string{"conf/config.yaml"},
@@ -33,14 +33,12 @@ func main() {
 		log.Fatal("Config load error:", err)
 	}
 
-	fmt.Println("=== Synology Download Station Test ===")
+	fmt.Println("=== Synology Worker Test ===")
 	fmt.Println("URL:", cfg.Synology.URL)
 	fmt.Println()
 
-	// Создаем клиент
 	client := synology.NewClient(cfg.Synology.URL)
 
-	// 1. Login
 	fmt.Println("1. Login...")
 	err := client.Login(cfg.Synology.Username, cfg.Synology.Password)
 	if err != nil {
@@ -49,66 +47,73 @@ func main() {
 	fmt.Println("✓ Login successful")
 	fmt.Println()
 
-	// 2. Get info
-	fmt.Println("2. Get Download Station info...")
-	info, err := client.GetInfo()
-	if err != nil {
-		log.Fatal("Get info failed:", err)
+	w := worker.New(client, cfg.Synology.Paths)
+
+	fmt.Println("2. DoTask (add)...")
+	addTask := schema.Task{
+		Id:   1,
+		Type: schema.TaskTypeSyno,
+		TaskData: schema.TaskData{
+			Syno: schema.TaskSyno{
+				Command:    schema.SynoTaskCmdAdd,
+				Category:   schema.SynoCategoryOther,
+				TorrentUrl: "https://releases.ubuntu.com/22.04/ubuntu-22.04.3-live-server-amd64.iso",
+			},
+		},
 	}
-	fmt.Printf("✓ Version: %s, Is Manager: %v\n", info.VersionString, info.IsManager)
+	addReport := w.DoTask(addTask)
+	fmt.Printf("✓ Result: Status=%d, Text=%s\n", addReport.Status, addReport.TextMsg)
 	fmt.Println()
 
-	// 3. List tasks
-	fmt.Println("3. List existing tasks...")
-	tasks, err := client.ListTasks()
-	if err != nil {
-		log.Fatal("List tasks failed:", err)
+	fmt.Println("3. DoTask (list)...")
+	listTask := schema.Task{
+		Id:   2,
+		Type: schema.TaskTypeSyno,
+		TaskData: schema.TaskData{
+			Syno: schema.TaskSyno{
+				Command: schema.SynoTaskCmdList,
+			},
+		},
 	}
-	fmt.Printf("✓ Found %d tasks\n", len(tasks))
-	for _, task := range tasks {
-		fmt.Printf("  - %s: %s (status: %s)\n", task.ID, task.Title, task.Status)
-	}
+	listReport := w.DoTask(listTask)
+	fmt.Printf("✓ Result: Status=%d, Text=%s\n", listReport.Status, listReport.TextMsg)
 	fmt.Println()
 
-	// 4. Create task
-	fmt.Println("4. Create test task...")
-	testURL := "magnet:?xt=urn:btih:dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c"
-	destination := "downloads"
-	taskID, err := client.CreateTask(testURL, destination)
-	if err != nil {
-		log.Fatal("Create task failed:", err)
+	fmt.Println("4. DoTask (delete)...")
+	deleteTask := schema.Task{
+		Id:   3,
+		Type: schema.TaskTypeSyno,
+		TaskData: schema.TaskData{
+			Syno: schema.TaskSyno{
+				Command: schema.SynoTaskCmdDelete,
+				TaskId:  "dbid_17",
+			},
+		},
 	}
-	fmt.Println("✓ Task created, ID:", taskID)
+	deleteReport := w.DoTask(deleteTask)
+	fmt.Printf("✓ Result: Status=%d, Text=%s\n", deleteReport.Status, deleteReport.TextMsg)
 	fmt.Println()
 
-	// Ждем немного
-	fmt.Println("Waiting 3 seconds...")
-	time.Sleep(3 * time.Second)
-
-	// 5. List tasks again
-	fmt.Println("5. List tasks after creation...")
-	tasks, err = client.ListTasks()
-	if err != nil {
-		log.Fatal("List tasks failed:", err)
-	}
-	fmt.Printf("✓ Found %d tasks\n", len(tasks))
-	for _, task := range tasks {
-		fmt.Printf("  - %s: %s (status: %s)\n", task.ID, task.Title, task.Status)
-	}
+	fmt.Println("5. DoTask (list after delete)...")
+	listAfterDeleteReport := w.DoTask(listTask)
+	fmt.Printf("✓ Result: Status=%d, Text=%s\n", listAfterDeleteReport.Status, listAfterDeleteReport.TextMsg)
 	fmt.Println()
 
-	// 6. Delete created task
-	if taskID != "" {
-		fmt.Println("6. Delete test task...")
-		err = client.DeleteTask(taskID)
-		if err != nil {
-			log.Fatal("Delete task failed:", err)
-		}
-		fmt.Println("✓ Task deleted")
-		fmt.Println()
+	fmt.Println("6. Cleanup - delete created task dbid_18...")
+	cleanupTask := schema.Task{
+		Id:   4,
+		Type: schema.TaskTypeSyno,
+		TaskData: schema.TaskData{
+			Syno: schema.TaskSyno{
+				Command: schema.SynoTaskCmdDelete,
+				TaskId:  "dbid_18",
+			},
+		},
 	}
+	cleanupReport := w.DoTask(cleanupTask)
+	fmt.Printf("✓ Result: Status=%d, Text=%s\n", cleanupReport.Status, cleanupReport.TextMsg)
+	fmt.Println()
 
-	// 7. Logout
 	fmt.Println("7. Logout...")
 	err = client.Logout()
 	if err != nil {

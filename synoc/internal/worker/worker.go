@@ -8,7 +8,7 @@ import (
 )
 
 type SynoClient interface {
-	CreateTask(uri, destination string) (string, error)
+	CreateTask(uri, destination, filename string) (string, error)
 	ListTasks() ([]synology.Task, error)
 	DeleteTask(taskID string) error
 }
@@ -52,7 +52,7 @@ func (w *Worker) handleAdd(task schema.Task, syno schema.TaskSyno) schema.Report
 		}
 	}
 
-	taskID, err := w.client.CreateTask(syno.TorrentUrl, destination)
+	taskID, err := w.client.CreateTask(syno.TorrentUrl, destination, "")
 	if err != nil {
 		return schema.ReportTaskReq{
 			TaskId:  task.Id,
