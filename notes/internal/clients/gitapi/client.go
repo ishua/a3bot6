@@ -2,11 +2,13 @@ package gitapi
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"time"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"os"
-	"time"
 )
 
 type GitClient struct {
@@ -47,11 +49,18 @@ func (r *GitClient) Pull() error {
 		return fmt.Errorf("pull get status: %w", err)
 	}
 
+	log.Printf("[DEBUG] git status before pull: clean=%v", status.IsClean())
 	if !status.IsClean() {
-		err = w.Reset(&git.ResetOptions{Mode: git.HardReset})
+		for file, s := range status {
+			log.Printf("[DEBUG]   %s: %v", file, s)
+		}
+		err = w.Reset(&git.ResetOptions{
+			Mode: git.HardReset,
+		})
 		if err != nil {
 			return fmt.Errorf("pull reset: %w", err)
 		}
+		log.Printf("[DEBUG] git reset done")
 	}
 
 	err = w.Pull(&git.PullOptions{
