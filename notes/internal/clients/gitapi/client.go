@@ -41,6 +41,19 @@ func (r *GitClient) Pull() error {
 	if err != nil {
 		return fmt.Errorf("pull create worktree: %w", err)
 	}
+
+	status, err := w.Status()
+	if err != nil {
+		return fmt.Errorf("pull get status: %w", err)
+	}
+
+	if !status.IsClean() {
+		err = w.Reset(&git.ResetOptions{Mode: git.HardReset})
+		if err != nil {
+			return fmt.Errorf("pull reset: %w", err)
+		}
+	}
+
 	err = w.Pull(&git.PullOptions{
 		Auth: &http.BasicAuth{
 			Username: r.Username, // yes, this can be anything except an empty string
