@@ -2,7 +2,6 @@ package gitapi
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -24,7 +23,7 @@ func NewClient(path string, url string, token string, username string, email str
 	if err != nil {
 		r, err = git.PlainClone(path, false, &git.CloneOptions{
 			Auth: &http.BasicAuth{
-				Username: username, // yes, this can be anything except an empty string
+				Username: username,
 				Password: token,
 			},
 			URL:      url,
@@ -33,6 +32,12 @@ func NewClient(path string, url string, token string, username string, email str
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	cfg, err := r.Config()
+	if err == nil {
+		cfg.Raw.Section("core").SetOption("fileMode", "false")
+		r.Storer.SetConfig(cfg)
 	}
 
 	return &GitClient{r, token, username, email, path}, nil
@@ -44,28 +49,9 @@ func (r *GitClient) Pull() error {
 		return fmt.Errorf("pull create worktree: %w", err)
 	}
 
-	status, err := w.Status()
-	if err != nil {
-		return fmt.Errorf("pull get status: %w", err)
-	}
-
-	log.Printf("[DEBUG] git status before pull: clean=%v", status.IsClean())
-	if !status.IsClean() {
-		for file, s := range status {
-			log.Printf("[DEBUG]   %s: %v", file, s)
-		}
-		err = w.Reset(&git.ResetOptions{
-			Mode: git.HardReset,
-		})
-		if err != nil {
-			return fmt.Errorf("pull reset: %w", err)
-		}
-		log.Printf("[DEBUG] git reset done")
-	}
-
 	err = w.Pull(&git.PullOptions{
 		Auth: &http.BasicAuth{
-			Username: r.Username, // yes, this can be anything except an empty string
+			Username: r.Username,
 			Password: r.Token,
 		},
 		RemoteName: "origin"})
