@@ -58,8 +58,10 @@ func (m *Model) DoTask(task schema.Task) schema.ReportTaskReq {
 		}
 	case schema.TaskNoteReadInbox:
 		return m.readInbox(task.Id)
-	case schema.TaskNoteCmdAddDiary:
-		return m.addAddDiary(task)
+	case schema.TaskNoteCmdAdd5bx:
+		return m.add5bx(task)
+	case schema.TaskNoteCmdAddEntry:
+		return m.addEntry(task)
 	case schema.TaskNoteCmdAddInbox:
 		return m.addAddInbox(task)
 	}
@@ -70,7 +72,15 @@ func (m *Model) DoTask(task schema.Task) schema.ReportTaskReq {
 	}
 }
 
-func (m *Model) addAddDiary(task schema.Task) schema.ReportTaskReq {
+func (m *Model) add5bx(task schema.Task) schema.ReportTaskReq {
+	return m.addToDiary(task, get5bxPath(), "5BX")
+}
+
+func (m *Model) addEntry(task schema.Task) schema.ReportTaskReq {
+	return m.addToDiary(task, getEntryPath(), "entry")
+}
+
+func (m *Model) addToDiary(task schema.Task, filePath string, label string) schema.ReportTaskReq {
 	addText := task.TaskData.Tn.AddText
 	if len(addText) == 0 {
 		return schema.ReportTaskReq{
@@ -79,12 +89,12 @@ func (m *Model) addAddDiary(task schema.Task) schema.ReportTaskReq {
 			TextMsg: "add text is empty",
 		}
 	}
-	diaryRows, err := m.readFile(getDiaryPath())
+	diaryRows, err := m.readFile(filePath)
 	if err != nil {
 		return schema.ReportTaskReq{
 			TaskId:  task.Id,
 			Status:  schema.TaskStatusError,
-			TextMsg: fmt.Sprintf("read diary file: %v", err),
+			TextMsg: fmt.Sprintf("read %s file: %v", label, err),
 		}
 	}
 	newStrings := []string{}
@@ -95,28 +105,28 @@ func (m *Model) addAddDiary(task schema.Task) schema.ReportTaskReq {
 	}
 
 	newStrings = append(newStrings, "- "+addText)
-	err = m.addRowToFile(getDiaryPath(), newStrings)
+	err = m.addRowToFile(filePath, newStrings)
 	if err != nil {
 		return schema.ReportTaskReq{
 			TaskId:  task.Id,
 			Status:  schema.TaskStatusError,
-			TextMsg: fmt.Sprintf("add diary to file: %v", err),
+			TextMsg: fmt.Sprintf("add %s to file: %v", label, err),
 		}
 	}
 
-	err = m.gitClient.CommitAndPush([]string{getDiaryPath()})
+	err = m.gitClient.CommitAndPush([]string{filePath})
 	if err != nil {
 		return schema.ReportTaskReq{
 			TaskId:  task.Id,
 			Status:  schema.TaskStatusError,
-			TextMsg: fmt.Sprintf("commit and push diary: %v", err),
+			TextMsg: fmt.Sprintf("commit and push %s: %v", label, err),
 		}
 	}
 
 	return schema.ReportTaskReq{
 		TaskId:  task.Id,
 		Status:  schema.TaskStatusDone,
-		TextMsg: "text add to diary",
+		TextMsg: fmt.Sprintf("text add to %s", label),
 	}
 }
 
@@ -235,8 +245,14 @@ func (m *Model) addRowToFile(filePath string, rows []string) error {
 	return nil
 }
 
-func getDiaryPath() string {
+func get5bxPath() string {
 	now := time.Now()
-	quarter := (int(now.Month())-1)/3 + 1 // 1,2,3,4
+	quarter := (int(now.Month())-1)/3 + 1
 	return fmt.Sprintf("Diary/5BX %d%02d.markdown", now.Year(), quarter)
+}
+
+func getEntryPath() string {
+	now := time.Now()
+	quarter := (int(now.Month())-1)/3 + 1
+	return fmt.Sprintf("Diary/entry %d%02d.markdown", now.Year(), quarter)
 }

@@ -71,7 +71,8 @@ type TaskNoteCmd string
 
 const (
 	TaskNoteCmdPull     TaskNoteCmd = "pull"
-	TaskNoteCmdAddDiary TaskNoteCmd = "add5bx"
+	TaskNoteCmdAdd5bx   TaskNoteCmd = "add5bx"
+	TaskNoteCmdAddEntry TaskNoteCmd = "addEntry"
 	TaskNoteCmdAddInbox TaskNoteCmd = "addInbox"
 	TaskNoteReadInbox   TaskNoteCmd = "readInbox"
 )
