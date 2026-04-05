@@ -16,8 +16,10 @@ next words:
 `
 
 const tnHelpText = `This is help for /note commands:
-- /note diary entry - add message to diary. Synonyms: nd/Nd
-- /note diary 5bx - add 5bx line. Synonyms: n5/N5
+- /note 5bx - add 5bx line. Synonyms: n5/N5
+- /note entry - add message to entry. Synonyms: nd/Nd
+- /note weight - add weight. Synonyms: nw/Nw
+- /note bp - add blood pressure. Synonyms: nbp/Nbp
 - /note inbox add - add text to inbox. Synonyms: ni/Ni
 - /note inbox read - read inbox. Synonyms: nir/Nir
 - /note pull - just update repo
