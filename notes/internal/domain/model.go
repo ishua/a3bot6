@@ -64,6 +64,10 @@ func (m *Model) DoTask(task schema.Task) schema.ReportTaskReq {
 		return m.addEntry(task)
 	case schema.TaskNoteCmdAddInbox:
 		return m.addAddInbox(task)
+	case schema.TaskNoteCmdAddWeight:
+		return m.addWeight(task)
+	case schema.TaskNoteCmdAddBP:
+		return m.addBloodPressure(task)
 	}
 	return schema.ReportTaskReq{
 		TaskId:  task.Id,
@@ -245,6 +249,76 @@ func (m *Model) addRowToFile(filePath string, rows []string) error {
 	return nil
 }
 
+func (m *Model) addWeight(task schema.Task) schema.ReportTaskReq {
+	addText := task.TaskData.Tn.AddText
+	if len(addText) == 0 {
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: "add text is empty",
+		}
+	}
+	line := fmt.Sprintf("%s %s", time.Now().Format("2006-01-02"), addText)
+	err := m.addRowToFile(getWeightPath(), []string{line})
+	if err != nil {
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: fmt.Sprintf("add weight to file: %v", err),
+		}
+	}
+
+	err = m.gitClient.CommitAndPush([]string{getWeightPath()})
+	if err != nil {
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: fmt.Sprintf("commit and push weight: %v", err),
+		}
+	}
+
+	return schema.ReportTaskReq{
+		TaskId:  task.Id,
+		Status:  schema.TaskStatusDone,
+		TextMsg: "weight added",
+	}
+}
+
+func (m *Model) addBloodPressure(task schema.Task) schema.ReportTaskReq {
+	addText := task.TaskData.Tn.AddText
+	if len(addText) == 0 {
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: "add text is empty",
+		}
+	}
+	line := fmt.Sprintf("%s %s", time.Now().Format("2006-01-02"), addText)
+	err := m.addRowToFile(getBPPath(), []string{line})
+	if err != nil {
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: fmt.Sprintf("add bp to file: %v", err),
+		}
+	}
+
+	err = m.gitClient.CommitAndPush([]string{getBPPath()})
+	if err != nil {
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: fmt.Sprintf("commit and push bp: %v", err),
+		}
+	}
+
+	return schema.ReportTaskReq{
+		TaskId:  task.Id,
+		Status:  schema.TaskStatusDone,
+		TextMsg: "bp added",
+	}
+}
+
 func get5bxPath() string {
 	now := time.Now()
 	quarter := (int(now.Month())-1)/3 + 1
@@ -255,4 +329,12 @@ func getEntryPath() string {
 	now := time.Now()
 	quarter := (int(now.Month())-1)/3 + 1
 	return fmt.Sprintf("Diary/entry %d%02d.markdown", now.Year(), quarter)
+}
+
+func getWeightPath() string {
+	return "Diary/weight.markdown"
+}
+
+func getBPPath() string {
+	return "Diary/bp.markdown"
 }

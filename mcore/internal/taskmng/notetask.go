@@ -82,6 +82,28 @@ func (m *Mng) createNoteTask(dialogId int64, text string) (string, error) {
 				AddText: "",
 			}
 		}
+	case "weight":
+		{
+			var addText string
+			if len(words) > 2 {
+				addText = strings.Join(words[2:], " ")
+			}
+			task.TaskData.Tn = schema.TaskNote{
+				Command: schema.TaskNoteCmdAddWeight,
+				AddText: addText,
+			}
+		}
+	case "bp":
+		{
+			var addText string
+			if len(words) > 2 {
+				addText = strings.Join(words[2:], " ")
+			}
+			task.TaskData.Tn = schema.TaskNote{
+				Command: schema.TaskNoteCmdAddBP,
+				AddText: addText,
+			}
+		}
 	case "help":
 		{
 			return tnHelpText, nil
@@ -108,6 +130,10 @@ func parseSimplifications(words []string) ([]string, error) {
 		return append([]string{"/note", "inbox", "add"}, words[1:]...), nil
 	case "nir", "Nir":
 		return append([]string{"/note", "inbox", "read"}, words[1:]...), nil
+	case "nw", "Nw":
+		return append([]string{"/note", "weight"}, words[1:]...), nil
+	case "nbp", "Nbp":
+		return append([]string{"/note", "bp"}, words[1:]...), nil
 	}
 	return nil, fmt.Errorf("synonyms command not found")
 }
