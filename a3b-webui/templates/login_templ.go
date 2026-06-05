@@ -8,7 +8,7 @@ package templates
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func LoginPage() templ.Component {
+func LoginPage(errorMsg string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -29,7 +29,82 @@ func LoginPage() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>Login — a3b-webui</title><script src=\"https://unpkg.com/htmx.org@2\"></script><style>\n\t\t\t\t* { box-sizing: border-box; margin: 0; padding: 0; }\n\t\t\t\tbody { font-family: system-ui, -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f5f5f5; }\n\t\t\t\t.card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 100%; max-width: 360px; }\n\t\t\t\th1 { margin-top: 0; margin-bottom: 1.5rem; font-size: 1.5rem; color: #1e293b; }\n\t\t\t\tlabel { display: block; margin-bottom: 0.25rem; font-weight: 500; color: #475569; }\n\t\t\t\tinput { width: 100%; padding: 0.5rem; margin-bottom: 1rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 0.875rem; }\n\t\t\t\tbutton { width: 100%; padding: 0.625rem; background: #2563eb; color: white; border: none; border-radius: 4px; font-size: 0.875rem; cursor: pointer; }\n\t\t\t\tbutton:hover { background: #1d4ed8; }\n\t\t\t</style></head><body><div class=\"card\"><h1>Login</h1><form hx-post=\"/login\" hx-target=\"body\" hx-push-url=\"true\"><label for=\"login\">Login</label> <input type=\"text\" id=\"login\" name=\"login\" required autocomplete=\"username\"> <label for=\"password\">Password</label> <input type=\"password\" id=\"password\" name=\"password\" required autocomplete=\"current-password\"> <button type=\"submit\">Sign in</button></form></div></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>Login — a3b-webui</title><script src=\"https://unpkg.com/htmx.org@2\"></script><style>\n\t\t\t\t* { box-sizing: border-box; margin: 0; padding: 0; }\n\t\t\t\tbody { font-family: system-ui, -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f5f5f5; }\n\t\t\t\t.card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 100%; max-width: 360px; }\n\t\t\t\th1 { margin-top: 0; margin-bottom: 1.5rem; font-size: 1.5rem; color: #1e293b; }\n\t\t\t\tlabel { display: block; margin-bottom: 0.25rem; font-weight: 500; color: #475569; }\n\t\t\t\tinput { width: 100%; padding: 0.5rem; margin-bottom: 1rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 0.875rem; }\n\t\t\t\tbutton { width: 100%; padding: 0.625rem; background: #2563eb; color: white; border: none; border-radius: 4px; font-size: 0.875rem; cursor: pointer; }\n\t\t\t\tbutton:hover { background: #1d4ed8; }\n\t\t\t\t.error { color: #dc2626; font-size: 0.8125rem; margin-top: -0.5rem; margin-bottom: 0.75rem; text-align: center; }\n\t\t\t</style></head><body><div class=\"card\" id=\"login-card\"><h1>Login</h1><form hx-post=\"/login\" hx-target=\"#login-card\" hx-swap=\"outerHTML\"><label for=\"login\">Login</label> <input type=\"text\" id=\"login\" name=\"login\" required autocomplete=\"username\"> <label for=\"password\">Password</label> <input type=\"password\" id=\"password\" name=\"password\" required autocomplete=\"current-password\"> ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if errorMsg != "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"error\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var2 string
+			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(errorMsg)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/login.templ`, Line: 32, Col: 35}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<button type=\"submit\">Sign in</button></form></div></body></html>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func LoginCard(errorMsg string) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var3 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var3 == nil {
+			templ_7745c5c3_Var3 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"card\" id=\"login-card\"><h1>Login</h1><form hx-post=\"/login\" hx-target=\"#login-card\" hx-swap=\"outerHTML\"><label for=\"login\">Login</label> <input type=\"text\" id=\"login\" name=\"login\" required autocomplete=\"username\"> <label for=\"password\">Password</label> <input type=\"password\" id=\"password\" name=\"password\" required autocomplete=\"current-password\"> ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if errorMsg != "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"error\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var4 string
+			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(errorMsg)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/login.templ`, Line: 50, Col: 33}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<button type=\"submit\">Sign in</button></form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

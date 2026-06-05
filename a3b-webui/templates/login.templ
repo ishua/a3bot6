@@ -1,6 +1,6 @@
 package templates
 
-templ LoginPage() {
+templ LoginPage(errorMsg string) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
@@ -17,19 +17,39 @@ templ LoginPage() {
 				input { width: 100%; padding: 0.5rem; margin-bottom: 1rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 0.875rem; }
 				button { width: 100%; padding: 0.625rem; background: #2563eb; color: white; border: none; border-radius: 4px; font-size: 0.875rem; cursor: pointer; }
 				button:hover { background: #1d4ed8; }
+				.error { color: #dc2626; font-size: 0.8125rem; margin-top: -0.5rem; margin-bottom: 0.75rem; text-align: center; }
 			</style>
 		</head>
 		<body>
-			<div class="card">
+			<div class="card" id="login-card">
 				<h1>Login</h1>
-				<form hx-post="/login" hx-target="body" hx-push-url="true">
+				<form hx-post="/login" hx-target="#login-card" hx-swap="outerHTML">
 					<label for="login">Login</label>
 					<input type="text" id="login" name="login" required autocomplete="username"/>
 					<label for="password">Password</label>
 					<input type="password" id="password" name="password" required autocomplete="current-password"/>
+					if errorMsg != "" {
+						<div class="error">{ errorMsg }</div>
+					}
 					<button type="submit">Sign in</button>
 				</form>
 			</div>
 		</body>
 	</html>
+}
+
+templ LoginCard(errorMsg string) {
+	<div class="card" id="login-card">
+		<h1>Login</h1>
+		<form hx-post="/login" hx-target="#login-card" hx-swap="outerHTML">
+			<label for="login">Login</label>
+			<input type="text" id="login" name="login" required autocomplete="username"/>
+			<label for="password">Password</label>
+			<input type="password" id="password" name="password" required autocomplete="current-password"/>
+			if errorMsg != "" {
+				<div class="error">{ errorMsg }</div>
+			}
+			<button type="submit">Sign in</button>
+		</form>
+	</div>
 }

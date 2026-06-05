@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/a3bot6/a3b-webui/internal/api"
@@ -18,17 +17,15 @@ func NewVPNHandler(apiCli api.ClientInterface) *VPNHandler {
 	return &VPNHandler{apiCli: apiCli}
 }
 
-// Use switches VPN to a specific tag (POST /use).
+// Use switches VPN to a specific tag (POST /use/{tag}).
 func (h *VPNHandler) Use(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Tag string `json:"tag"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
+	tag := r.PathValue("tag")
+	if tag == "" {
+		http.Error(w, "Missing tag", http.StatusBadRequest)
 		return
 	}
 
-	if err := h.apiCli.Use(req.Tag); err != nil {
+	if err := h.apiCli.Use(tag); err != nil {
 		http.Error(w, "Failed to switch: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
