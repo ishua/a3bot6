@@ -1,0 +1,30 @@
+@url = http://localhost:8080
+@secret = secret1
+
+### health
+GET {{url}}/health
+
+### list
+GET {{url}}/list
+secret: {{secret}}
+
+### status
+GET {{url}}/status
+secret: {{secret}}
+
+### use
+POST {{url}}/use
+content-type: application/json
+secret: {{secret}}
+
+{
+  "tag": "vless-"
+}
+
+### auto
+POST {{url}}/auto
+secret: {{secret}}
+
+### ping
+GET {{url}}/ping
+secret: {{secret}}
