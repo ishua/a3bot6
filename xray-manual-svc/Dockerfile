@@ -4,7 +4,7 @@ RUN apk add --no-cache git
 WORKDIR /build
 ADD . .
 RUN CGO_ENABLED=0 GOOS=linux \
-    go build -ldflags '-extldflags "-static"' -o app /build/cmd/server
+    go build -ldflags '-extldflags "-static"' -o app /build/xray-manual-svc/cmd/server
 
 FROM alpine:3.23
 RUN apk add -U tzdata
