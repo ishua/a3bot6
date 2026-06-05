@@ -8,6 +8,15 @@ import (
 	"net/http"
 )
 
+// ClientInterface defines the public API for the xray-manual-svc client.
+type ClientInterface interface {
+	GetList() ([]string, error)
+	GetStatus() (*StatusData, error)
+	Use(tag string) error
+	Auto() error
+	Ping() (*PingData, error)
+}
+
 // Client is an HTTP client for xray-manual-svc.
 type Client struct {
 	baseURL   string

@@ -1,0 +1,42 @@
+package templates
+
+templ Layout(title string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } — a3b-webui</title>
+			<script src="https://unpkg.com/htmx.org@2"></script>
+			<style>
+				* { box-sizing: border-box; margin: 0; padding: 0; }
+				body { font-family: system-ui, -apple-system, sans-serif; background: #f5f5f5; color: #1a1a1a; min-height: 100vh; }
+				nav { background: #1e293b; color: white; padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+				nav h2 { font-size: 1.125rem; }
+				nav a { color: #94a3b8; text-decoration: none; font-size: 0.875rem; }
+				nav a:hover { color: white; }
+				main { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+				.card { background: white; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); padding: 1.5rem; margin-bottom: 1.5rem; }
+				.card h3 { font-size: 1rem; margin-bottom: 1rem; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; }
+				.btn { display: inline-block; padding: 0.5rem 1rem; border-radius: 6px; border: none; font-size: 0.875rem; cursor: pointer; text-decoration: none; }
+				.btn-primary { background: #2563eb; color: white; }
+				.btn-primary:hover { background: #1d4ed8; }
+				.btn-danger { background: #dc2626; color: white; }
+				.btn-danger:hover { background: #b91c1c; }
+				.btn-outline { background: transparent; color: #2563eb; border: 1px solid #2563eb; }
+				.btn-outline:hover { background: #eff6ff; }
+				.tag-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+				.tag { padding: 0.375rem 0.75rem; border-radius: 999px; font-size: 0.8125rem; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.15s; }
+				.tag:hover { border-color: #2563eb; color: #2563eb; }
+				.tag.active { background: #2563eb; color: white; border-color: #2563eb; }
+				.status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+				.stat { text-align: center; }
+				.stat-value { font-size: 1.5rem; font-weight: 600; }
+				.stat-label { font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; }
+			</style>
+		</head>
+		<body>
+			{ children... }
+		</body>
+	</html>
+}
