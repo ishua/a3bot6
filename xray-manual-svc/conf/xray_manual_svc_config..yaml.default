@@ -1,0 +1,10 @@
+xray:
+  config_path: "config.json"
+  xray_grpc_addr: localhost:10098
+  http_proxy: http://localhost:10099
+  balancer_tag: balancer
+auth:
+  secrets:
+    - "secret1"
+server:
+  addr: :8080
