@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 )
 
 // SessionValidator validates session cookies.
@@ -12,8 +13,8 @@ type SessionValidator interface {
 // AuthMiddleware checks session cookie and redirects to /login if invalid.
 func AuthMiddleware(next http.Handler, sv SessionValidator) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Skip auth for login/logout paths
-		if r.URL.Path == "/login" {
+		// Skip auth for login/logout paths and static files
+		if r.URL.Path == "/login" || strings.HasPrefix(r.URL.Path, "/static/") {
 			next.ServeHTTP(w, r)
 			return
 		}
