@@ -12,8 +12,7 @@ FROM alpine:3.23
 RUN apk add -U tzdata
 COPY --from=build /etc/ssl/certs/ca-certificates.crt \
     /etc/ssl/certs/ca-certificates.crt
-COPY --from=build /build/app /app/app
-COPY --from=build /build/a3b-webui/static /app/static
+COPY --from=build /build/app /app
+COPY --from=build /build/a3b-webui/static /static
 RUN mkdir /conf
-WORKDIR /app
-ENTRYPOINT ["/app/app"]
+ENTRYPOINT ["/app"]
