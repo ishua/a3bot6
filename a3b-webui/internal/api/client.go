@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 // ClientInterface defines the public API for the xray-manual-svc client.
@@ -35,7 +36,9 @@ func New(baseURL, secret string) *Client {
 	return &Client{
 		baseURL:    baseURL,
 		secret:     secret,
-		httpClient: &http.Client{},
+		httpClient: &http.Client{
+			Timeout: 5 * time.Second,
+		},
 	}
 }
 

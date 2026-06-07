@@ -36,6 +36,9 @@ func main() {
 	mux.HandleFunc("POST /login", authH.Login)
 	mux.HandleFunc("POST /logout", authH.Logout)
 
+	// Static files
+	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+
 	// Dashboard
 	mux.HandleFunc("GET /", dashboardH.Dashboard)
 

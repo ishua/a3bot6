@@ -1,41 +1,31 @@
 package templates
 
 templ LoginPage(errorMsg string) {
-	<!DOCTYPE html>
-	<html lang="en">
-		<head>
-			<meta charset="UTF-8"/>
-			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-			<title>Login — a3b-webui</title>
-			<script src="https://unpkg.com/htmx.org@2"></script>
-			<style>
-				* { box-sizing: border-box; margin: 0; padding: 0; }
-				body { font-family: system-ui, -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f5f5f5; }
-				.card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 100%; max-width: 360px; }
-				h1 { margin-top: 0; margin-bottom: 1.5rem; font-size: 1.5rem; color: #1e293b; }
-				label { display: block; margin-bottom: 0.25rem; font-weight: 500; color: #475569; }
-				input { width: 100%; padding: 0.5rem; margin-bottom: 1rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 0.875rem; }
-				button { width: 100%; padding: 0.625rem; background: #2563eb; color: white; border: none; border-radius: 4px; font-size: 0.875rem; cursor: pointer; }
-				button:hover { background: #1d4ed8; }
-				.error { color: #dc2626; font-size: 0.8125rem; margin-top: -0.5rem; margin-bottom: 0.75rem; text-align: center; }
-			</style>
-		</head>
-		<body>
-			<div class="card" id="login-card">
-				<h1>Login</h1>
-				<form hx-post="/login" hx-target="#login-card" hx-swap="outerHTML">
-					<label for="login">Login</label>
-					<input type="text" id="login" name="login" required autocomplete="username"/>
-					<label for="password">Password</label>
-					<input type="password" id="password" name="password" required autocomplete="current-password"/>
-					if errorMsg != "" {
-						<div class="error">{ errorMsg }</div>
-					}
-					<button type="submit">Sign in</button>
-				</form>
-			</div>
-		</body>
-	</html>
+	@Layout("Login") {
+		<style>
+			body { display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+			.card { width: 100%; max-width: 360px; }
+			h1 { margin-bottom: 1.5rem; font-size: 1.5rem; color: #1e293b; }
+			label { display: block; margin-bottom: 0.25rem; font-weight: 500; color: #475569; }
+			input { width: 100%; padding: 0.5rem; margin-bottom: 1rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.875rem; }
+			button { width: 100%; padding: 0.625rem; background: #2563eb; color: white; border: none; border-radius: 4px; font-size: 0.875rem; cursor: pointer; }
+			button:hover { background: #1d4ed8; }
+			.error { color: #dc2626; font-size: 0.8125rem; margin-top: -0.5rem; margin-bottom: 0.75rem; text-align: center; }
+		</style>
+		<div class="card" id="login-card">
+			<h1>Login</h1>
+			<form hx-post="/login" hx-target="#login-card" hx-swap="outerHTML">
+				<label for="login">Login</label>
+				<input type="text" id="login" name="login" required autocomplete="username"/>
+				<label for="password">Password</label>
+				<input type="password" id="password" name="password" required autocomplete="current-password"/>
+				if errorMsg != "" {
+					<div class="error">{ errorMsg }</div>
+				}
+				<button type="submit">Sign in</button>
+			</form>
+		</div>
+	}
 }
 
 templ LoginCard(errorMsg string) {
