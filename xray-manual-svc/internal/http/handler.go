@@ -7,11 +7,12 @@ import (
 )
 
 type Handler struct {
-    manager *internal.ProxyManager
+    manager    *internal.ProxyManager
+    appVersion string
 }
 
-func NewHandler(manager *internal.ProxyManager) *Handler {
-    return &Handler{manager: manager}
+func NewHandler(manager *internal.ProxyManager, appVersion string) *Handler {
+    return &Handler{manager: manager, appVersion: appVersion}
 }
 
 type response struct {
@@ -37,7 +38,7 @@ func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
         writeError(w, err)
         return
     }
-    writeOK(w, map[string]string{"status": "ok"})
+    writeOK(w, map[string]string{"status": "ok", "version": h.appVersion})
 }
 
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {

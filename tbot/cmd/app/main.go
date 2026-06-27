@@ -23,7 +23,8 @@ type MyConfig struct {
 }
 
 var (
-	cfg MyConfig
+	cfg        MyConfig
+	appVersion = "dev"
 )
 
 func main() {
@@ -52,6 +53,7 @@ func main() {
 	log.Println("listen mcore")
 	tgClient.ListeningTg(ctx)
 	log.Println("listen tgClient")
+	log.Printf("starting tbot version: %s", appVersion)
 
 	// stop service here
 	sigChan := make(chan os.Signal, 1)

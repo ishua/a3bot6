@@ -9,13 +9,14 @@ import (
 )
 
 type Api struct {
-	rootPath string
-	taskMng  taskMnger
-	router   router
-	funcMng  funcMng
-	debug    bool
-	secrets  []string
-	port     string
+	rootPath   string
+	taskMng    taskMnger
+	router     router
+	funcMng    funcMng
+	debug      bool
+	secrets    []string
+	port       string
+	appVersion string
 }
 
 type taskMnger interface {
@@ -30,15 +31,16 @@ type router interface {
 	ProcessMsg(m schema.Message) schema.TaskMsg
 }
 
-func NewApi(rootPath string, taskMng taskMnger, router router, funcMng funcMng, debug bool, secrets []string, port string) *Api {
+func NewApi(rootPath string, taskMng taskMnger, router router, funcMng funcMng, debug bool, secrets []string, port string, appVersion string) *Api {
 	return &Api{
-		rootPath: rootPath,
-		taskMng:  taskMng,
-		router:   router,
-		funcMng:  funcMng,
-		debug:    debug,
-		secrets:  secrets,
-		port:     port,
+		rootPath:   rootPath,
+		taskMng:    taskMng,
+		router:     router,
+		funcMng:    funcMng,
+		debug:      debug,
+		secrets:    secrets,
+		port:       port,
+		appVersion: appVersion,
 	}
 }
 
@@ -227,10 +229,11 @@ func middleAuth(next http.Handler, secrets []string) http.Handler {
 
 func (a *Api) HandlerHealth(w http.ResponseWriter, req *http.Request) {
 	type PingRes struct {
-		Status string `json:"status"`
+		Status  string `json:"status"`
+		Version string `json:"version"`
 	}
 
-	js, _ := json.Marshal(PingRes{Status: "OK"})
+	js, _ := json.Marshal(PingRes{Status: "OK", Version: a.appVersion})
 	w.Header().Set("Content-Type", "application/json")
 	_, err := w.Write(js)
 	if err != nil {

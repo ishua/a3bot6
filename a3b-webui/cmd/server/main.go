@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -10,6 +11,8 @@ import (
 	"github.com/a3bot6/a3b-webui/internal/handler"
 	"github.com/a3bot6/a3b-webui/internal/middleware"
 )
+
+var appVersion = "dev"
 
 func main() {
 	cfg, err := config.Load()
@@ -30,6 +33,12 @@ func main() {
 
 	// Router
 	mux := http.NewServeMux()
+
+	// Health (before auth middleware)
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"status": "OK", "version": appVersion})
+	})
 
 	// Auth routes
 	mux.HandleFunc("GET /login", authH.LoginPage)
@@ -52,6 +61,7 @@ func main() {
 
 	addr := cfg.Server.Addr
 	log.Printf("starting a3b-webui on %s", addr)
+	log.Printf("version: %s", appVersion)
 	if err := http.ListenAndServe(addr, handler); err != nil {
 		log.Fatalf("server error: %v", err)
 	}

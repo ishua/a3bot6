@@ -27,6 +27,8 @@ def start_download(fc: app.FeedCreater,
 
 
 if __name__ == '__main__':
+    app_version = os.environ.get("APP_VERSION", "dev")
+    print(f"starting ytd2feed version: {app_version}")
     print("start app")
     ytdl_verion = version('yt_dlp')
     print("yt_dlp version", ytdl_verion)

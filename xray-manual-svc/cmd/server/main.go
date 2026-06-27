@@ -7,6 +7,8 @@ import (
     internalhttp "xray-manual-svc/internal/http"
 )
 
+var appVersion = "dev"
+
 func main() {
     cfg, err := config.Load()
     if err != nil {
@@ -18,10 +20,11 @@ func main() {
         log.Fatalf("failed to bootstrap: %v", err)
     }
 
-    handler := internalhttp.NewHandler(manager)
+    handler := internalhttp.NewHandler(manager, appVersion)
     server := internalhttp.NewServer(cfg.Server.Addr, handler, cfg.Auth.Secrets)
 
     log.Printf("starting server on %s", cfg.Server.Addr)
+    log.Printf("version: %s", appVersion)
     if err := server.ListenAndServe(); err != nil {
         log.Fatalf("server error: %v", err)
     }

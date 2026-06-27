@@ -29,7 +29,8 @@ type MyConfig struct {
 }
 
 var (
-	cfg MyConfig
+	cfg        MyConfig
+	appVersion = "dev"
 )
 
 func main() {
@@ -49,6 +50,7 @@ func main() {
 		logger.SetLogLevel(logger.DEBUG)
 		logger.Debugf("debug logging enabled")
 	}
+	logger.Infof("starting notes version: %s", appVersion)
 	fmt.Println(cfg.GitAccessToken)
 
 	gc, err := gitapi.NewClient(cfg.GitPath, cfg.GitUrl, cfg.GitAccessToken, "bot notes", cfg.GitEmail)

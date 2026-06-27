@@ -23,7 +23,8 @@ type MyConfig struct {
 }
 
 var (
-	cfg MyConfig
+	cfg        MyConfig
+	appVersion = "dev"
 )
 
 func main() {
@@ -51,6 +52,8 @@ func main() {
 		logger.Fatal("no users configured")
 	}
 
+	logger.Infof("starting mcore version: %s", appVersion)
+
 	//db init
 	db := msqlclient.NewSqlClient(cfg.SqliteFileName)
 	defer db.DbClose()
@@ -61,7 +64,7 @@ func main() {
 
 	router := routing.NewRouter(cfg.Users, dialogMng, taskMng)
 
-	server := rest.NewApi("", taskMng, router, funcMng, cfg.Debug, cfg.Secrets, cfg.HttpPort)
+	server := rest.NewApi("", taskMng, router, funcMng, cfg.Debug, cfg.Secrets, cfg.HttpPort, appVersion)
 	err := server.Run()
 	if err != nil {
 		logger.Info(err.Error())

@@ -1,4 +1,6 @@
 FROM python:latest
+ARG APP_VERSION=dev
+ENV APP_VERSION=${APP_VERSION}
 
 RUN apt-get -y update \
     && apt-get install -y ffmpeg  \
