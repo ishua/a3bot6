@@ -2,7 +2,10 @@ package xrayconfig
 
 import (
     "encoding/json"
+    "fmt"
     "os"
+    "path/filepath"
+    "slices"
     "strings"
 )
 
@@ -30,16 +33,55 @@ type Outbound struct {
     Tag string `json:"tag"`
 }
 
-func Load(path string) (*Config, error) {
-    f, err := os.Open(path)
+type partialConfig struct {
+    Outbounds []Outbound `json:"outbounds"`
+}
+
+func Load(dirPath string) (*Config, error) {
+    entries, err := os.ReadDir(dirPath)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("read dir %s: %w", dirPath, err)
     }
-    defer f.Close()
+
+    var jsonFiles []string
+    for _, e := range entries {
+        if e.IsDir() || filepath.Ext(e.Name()) != ".json" {
+            continue
+        }
+        jsonFiles = append(jsonFiles, e.Name())
+    }
+
+    slices.Sort(jsonFiles)
+
+    if len(jsonFiles) == 0 {
+        return nil, fmt.Errorf("no json files in xray config dir: %s", dirPath)
+    }
 
     var cfg Config
-    if err := json.NewDecoder(f).Decode(&cfg); err != nil {
-        return nil, err
+    first := true
+
+    for _, name := range jsonFiles {
+        path := filepath.Join(dirPath, name)
+        f, err := os.Open(path)
+        if err != nil {
+            return nil, fmt.Errorf("open %s: %w", path, err)
+        }
+
+        if first {
+            if err := json.NewDecoder(f).Decode(&cfg); err != nil {
+                f.Close()
+                return nil, fmt.Errorf("decode %s: %w", path, err)
+            }
+            first = false
+        } else {
+            var pc partialConfig
+            if err := json.NewDecoder(f).Decode(&pc); err != nil {
+                f.Close()
+                return nil, fmt.Errorf("decode %s: %w", path, err)
+            }
+            cfg.Outbounds = append(cfg.Outbounds, pc.Outbounds...)
+        }
+        f.Close()
     }
 
     return &cfg, nil

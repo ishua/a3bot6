@@ -9,9 +9,9 @@ import (
 )
 
 func Bootstrap(cfg *config.Config) (*ProxyManager, error) {
-	xrayCfg, err := xrayconfig.Load(cfg.Xray.ConfigPath)
+	xrayCfg, err := xrayconfig.Load(cfg.Xray.ConfigDir)
 	if err != nil {
-		return nil, fmt.Errorf("xrayCfg %s: %w", cfg.Xray.ConfigPath, err)
+		return nil, fmt.Errorf("xrayCfg %s: %w", cfg.Xray.ConfigDir, err)
 	}
 
 	tags := xrayCfg.BalancerTags(cfg.Xray.BalancerTag)

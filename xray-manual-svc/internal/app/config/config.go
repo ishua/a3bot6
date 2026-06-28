@@ -7,7 +7,7 @@ type Config struct {
 }
 
 type XrayConfig struct {
-    ConfigPath   string `yaml:"config_path"`
+    ConfigDir    string `yaml:"config_dir"`
     XrayGRPCAddr string `yaml:"xray_grpc_addr"`
     HTTPProxy    string `yaml:"http_proxy"`
     BalancerTag  string `yaml:"balancer_tag"`

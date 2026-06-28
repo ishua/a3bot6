@@ -23,8 +23,8 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
-	if cfg.Xray.ConfigPath == "" {
-		return nil, fmt.Errorf("cfg.Xray.ConfigPath is nil")
+	if cfg.Xray.ConfigDir == "" {
+		return nil, fmt.Errorf("cfg.Xray.ConfigDir is nil")
 	}
 
 	return &cfg, nil

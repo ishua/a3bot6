@@ -1,5 +1,5 @@
 xray:
-  config_path: "config.json"
+  config_dir: "config"
   xray_grpc_addr: localhost:10098
   http_proxy: http://localhost:10099
   balancer_tag: balancer

@@ -1,5 +1,5 @@
 xray:
-  config_path: xray_config.json
+  config_dir: xray_config_dir
   xray_grpc_addr: addr:port
   http_proxy: http://adr:port
   balancer_tag: balancer
