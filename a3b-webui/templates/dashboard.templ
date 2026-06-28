@@ -60,6 +60,12 @@ templ PingResult(ip string, latencyMs int64) {
 	</div>
 }
 
+templ PingError(err string) {
+	<div style="padding:0.5rem 0;font-size:0.875rem;color:#dc2626">
+		Ping failed: { err }
+	</div>
+}
+
 templ DashboardPage(status *api.StatusData, tags []string, activeTag string) {
 	@Layout("Dashboard") {
 		<style>

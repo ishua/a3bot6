@@ -73,7 +73,8 @@ func (h *VPNHandler) Auto(w http.ResponseWriter, r *http.Request) {
 func (h *VPNHandler) Ping(w http.ResponseWriter, r *http.Request) {
 	result, err := h.apiCli.Ping()
 	if err != nil {
-		http.Error(w, "Ping failed: "+err.Error(), http.StatusInternalServerError)
+		component := templates.PingError(err.Error())
+		component.Render(r.Context(), w)
 		return
 	}
 

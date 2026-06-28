@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -152,9 +153,16 @@ type PingData struct {
 	LatencyMs int64  `json:"latency_ms"`
 }
 
-// Ping pings the current VPN endpoint.
+// Ping pings the current VPN endpoint with a 2-second timeout.
 func (c *Client) Ping() (*PingData, error) {
-	data, err := c.doGet("/ping")
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/ping", nil)
+	if err != nil {
+		return nil, fmt.Errorf("create ping request: %w", err)
+	}
+	data, err := c.do(req)
 	if err != nil {
 		return nil, err
 	}
