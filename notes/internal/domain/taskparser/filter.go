@@ -84,3 +84,25 @@ func FilterToday(tf *TaskFile, now time.Time) []TaskItem {
 	}
 	return result
 }
+
+// FilterDueToday returns all top-level tasks (from any section) that have a
+// non-zero Due and due <= now, sorted ascending by Due date. Tasks with no due
+// date and tasks due after now are excluded. now is truncated to the day, so a
+// task due today is included regardless of the current time of day. Returns a
+// non-nil empty slice when there is nothing to return.
+func FilterDueToday(tf *TaskFile, now time.Time) []TaskItem {
+	result := make([]TaskItem, 0)
+	if tf == nil {
+		return result
+	}
+	now = now.Truncate(24 * time.Hour)
+	for _, section := range tf.Sections {
+		for _, task := range section.Tasks {
+			if !task.Due.IsZero() && !task.Due.After(now) {
+				result = append(result, task)
+			}
+		}
+	}
+	sortByDue(result)
+	return result
+}

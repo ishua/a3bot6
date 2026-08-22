@@ -209,8 +209,120 @@ func TestFilterDue_Stable(t *testing.T) {
 	}
 }
 
+// TestFilterDueToday verifies that FilterDueToday returns only top-level
+// tasks carrying a non-zero Due whose due date is on or before now (today or
+// overdue), sorted ascending by due date, and excludes no-due and future tasks.
+func TestFilterDueToday(t *testing.T) {
+	now := time.Date(2030, 7, 14, 10, 0, 0, 0, time.UTC)
+	tests := []struct {
+		name     string
+		tf       *TaskFile
+		now      time.Time
+		expected []string
+	}{
+		{
+			name:     "nil taskfile",
+			tf:       nil,
+			now:      now,
+			expected: []string{},
+		},
+		{
+			name:     "no sections",
+			tf:       &TaskFile{},
+			now:      now,
+			expected: []string{},
+		},
+		{
+			name: "no due dates",
+			tf: &TaskFile{Sections: []Section{{
+				Title: "Today",
+				Tasks: []TaskItem{mkItem("a"), mkItem("b")},
+			}}},
+			now:      now,
+			expected: []string{},
+		},
+		{
+			name: "only today/overdue included, sorted ascending",
+			tf: &TaskFile{Sections: []Section{
+				{Title: "Today", Tasks: []TaskItem{
+					mkItem("overdue later").withDue(2030, 7, 14),
+					mkItem("overdue earlier").withDue(2030, 7, 6),
+					mkItem("future").withDue(2030, 8, 9),
+					mkItem("no due"),
+				}},
+				{Title: "summer 2030", Tasks: []TaskItem{
+					mkItem("other overdue").withDue(2030, 7, 13),
+					mkItem("other future").withDue(2031, 1, 15),
+				}},
+			}},
+			now:      now,
+			expected: []string{"overdue earlier", "other overdue", "overdue later"},
+		},
+		{
+			name: "today inclusive regardless of time of day",
+			tf: &TaskFile{Sections: []Section{{
+				Title: "summer 2030",
+				Tasks: []TaskItem{mkItem("due today late hour").withDue(2030, 7, 14)},
+			}}},
+			now:      now,
+			expected: []string{"due today late hour"},
+		},
+		{
+			name: "tasks in the future excluded",
+			tf: &TaskFile{Sections: []Section{{
+				Title: "summer 2030",
+				Tasks: []TaskItem{
+					mkItem("future soon").withDue(2030, 7, 15),
+					mkItem("future far").withDue(2031, 1, 15),
+				},
+			}}},
+			now:      now,
+			expected: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := FilterDueToday(tt.tf, tt.now)
+			if got == nil {
+				t.Fatalf("FilterDueToday() returned nil (want non-nil empty slice)")
+			}
+			if len(got) != len(tt.expected) {
+				t.Fatalf("FilterDueToday() returned %d tasks, want %d: %v", len(got), len(tt.expected), got)
+			}
+			for i, want := range tt.expected {
+				if got[i].Text != want {
+					t.Errorf("FilterDueToday()[%d].Text = %q, want %q", i, got[i].Text, want)
+				}
+			}
+		})
+	}
+}
+
+// TestFilterToday_Stable verifies that tasks sharing the same due date keep
+// their original file order after sorting by FilterDueToday.
+func TestFilterDueToday_Stable(t *testing.T) {
+	tf := &TaskFile{Sections: []Section{{
+		Title: "summer 2030",
+		Tasks: []TaskItem{
+			mkItem("second").withDue(2030, 7, 6),
+			mkItem("first").withDue(2030, 7, 6),
+			mkItem("third").withDue(2030, 7, 6),
+		},
+	}}}
+	now := time.Date(2030, 7, 14, 10, 0, 0, 0, time.UTC)
+
+	got := FilterDueToday(tf, now)
+	if len(got) != 3 {
+		t.Fatalf("FilterDueToday() returned %d tasks, want 3", len(got))
+	}
+	if got[0].Text != "second" || got[1].Text != "first" || got[2].Text != "third" {
+		t.Errorf("FilterDueToday() not stable: got %q, %q, %q; want second, first, third", got[0].Text, got[1].Text, got[2].Text)
+	}
+}
+
 // TestFilterNoDueExcluded verifies that tasks without a due date are never
-// included in FilterDue. (FilterDueToday coverage is added in Task 4.)
+// included in FilterDue or FilterDueToday.
 func TestFilterNoDueExcluded(t *testing.T) {
 	withNoDue := mkItem("chore")
 	withDue := mkItem("appointment").withDue(2030, 7, 6)
@@ -219,12 +331,22 @@ func TestFilterNoDueExcluded(t *testing.T) {
 		Tasks: []TaskItem{withNoDue, withDue, mkItem("errand")},
 	}}}
 
-	got := FilterDue(tf)
-	if len(got) != 1 {
-		t.Fatalf("FilterDue() returned %d tasks, want 1 (only the due one)", len(got))
+	now := time.Date(2030, 7, 14, 10, 0, 0, 0, time.UTC)
+
+	gotDue := FilterDue(tf)
+	if len(gotDue) != 1 {
+		t.Fatalf("FilterDue() returned %d tasks, want 1 (only the due one)", len(gotDue))
 	}
-	if got[0].Text != "appointment" {
-		t.Errorf("FilterDue() included no-due task: got %q, want %q", got[0].Text, "appointment")
+	if gotDue[0].Text != "appointment" {
+		t.Errorf("FilterDue() included no-due task: got %q, want %q", gotDue[0].Text, "appointment")
+	}
+
+	gotDueToday := FilterDueToday(tf, now)
+	if len(gotDueToday) != 1 {
+		t.Fatalf("FilterDueToday() returned %d tasks, want 1 (only the due one)", len(gotDueToday))
+	}
+	if gotDueToday[0].Text != "appointment" {
+		t.Errorf("FilterDueToday() included no-due task: got %q, want %q", gotDueToday[0].Text, "appointment")
 	}
 }
 
