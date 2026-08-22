@@ -47,7 +47,7 @@ ehthumbs_vista.db
 [Dd]esktop.ini
 
 # Recycle Bin used on file shares
-$RECYCLE.BIN/   
+$RECYCLE.BIN/
 
 # Windows Installer files
 *.cab
@@ -97,4 +97,4 @@ __pycache__
 /data
 /mcore/data
 
-.opencode/plans
+.opencode/
