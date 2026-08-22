@@ -144,11 +144,11 @@ This avoids unicode-range complexity and matches the controlled vocabulary of th
 **Files:**
 - Create: `notes/internal/domain/taskparser/parser.go`
 
-- [ ] Create directory `notes/internal/domain/taskparser/`
-- [ ] Define `Warning`, `InlineLink`, `TaskItem`, `Section`, `TaskFile` structs
-- [ ] Define `ParseTaskFile(lines []string, stopMarker string) *TaskFile` function signature
-- [ ] Add required import (`time` only at this stage; `fmt` added in Task 3)
-- [ ] run `go build` — verify package compiles
+- [x] Create directory `notes/internal/domain/taskparser/`
+- [x] Define `Warning`, `InlineLink`, `TaskItem`, `Section`, `TaskFile` structs
+- [x] Define `ParseTaskFile(lines []string, stopMarker string) *TaskFile` function signature
+- [x] Add required import (`time` only at this stage; `fmt` added in Task 3)
+- [x] run `go build` — verify package compiles
 
 ### Task 2: Copy test data
 **Files:**
