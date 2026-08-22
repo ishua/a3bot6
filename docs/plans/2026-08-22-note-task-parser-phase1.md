@@ -202,16 +202,16 @@ This avoids unicode-range complexity and matches the controlled vocabulary of th
 ### Task 5: Verify acceptance criteria
 **Files:** (none)
 
-- [ ] Parser returns `*TaskFile` for all inputs (never nil, never errors)
-- [ ] Sections correctly parsed: Today, summer 2030, fall 2030, winter 2031
-- [ ] Tasks contain: priority (A/B), due dates, emojis, wikilinks, inline links
-- [ ] Subtasks parsed with correct parent relationship
-- [ ] Stop marker (`### Long`) and `---` both stop task collection
-- [ ] Lines after stop marker are silently skipped (no warnings)
-- [ ] Warnings generated for: `#` H1, `##` H2, bare wikilink on line, loose text, invalid due date
-- [ ] Warnings from inline extraction (invalid due date, unclosed wikilink) propagated to `TaskFile.Warnings`
-- [ ] Warnings include correct 1-based line numbers
-- [ ] run full test suite — all tests pass
+- [x] Parser returns `*TaskFile` for all inputs (never nil, never errors)
+- [x] Sections correctly parsed: Today, summer 2030, fall 2030, winter 2031
+- [x] Tasks contain: priority (A/B), due dates, emojis, wikilinks, inline links
+- [x] Subtasks parsed with correct parent relationship
+- [x] Stop marker (`### Long`) and `---` both stop task collection
+- [x] Lines after stop marker are silently skipped (no warnings)
+- [x] Warnings generated for: `#` H1, `##` H2, bare wikilink on line, loose text, invalid due date
+- [x] Warnings from inline extraction (invalid due date, unclosed wikilink) propagated to `TaskFile.Warnings`
+- [x] Warnings include correct 1-based line numbers
+- [x] run full test suite — all tests pass
 
 ### Task 6: Build verification and vet
 **Files:** (none)

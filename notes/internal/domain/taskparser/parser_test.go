@@ -510,6 +510,30 @@ func TestParseWarnings(t *testing.T) {
 	}
 }
 
+func TestParseInlineWarningsPropagate(t *testing.T) {
+	// Inline-extraction warnings (invalid due date, unclosed wikilink) must be
+	// propagated from parseTaskLine all the way into TaskFile.Warnings, for both
+	// plain task lines and subtask lines, with correct 1-based line numbers.
+	tf := parseFile(t, "### s\n- a [[unclosed\n\t- sub bad due:2030-13-45\n- c\n", "")
+	wantTexts := []string{"- a [[unclosed", "- sub bad due:2030-13-45"}
+	if len(tf.Warnings) != len(wantTexts) {
+		t.Fatalf("warnings = %d, want %d: %+v", len(tf.Warnings), len(wantTexts), tf.Warnings)
+	}
+	for i, want := range wantTexts {
+		if tf.Warnings[i].Text != want {
+			t.Errorf("warning[%d] text = %q, want %q", i, tf.Warnings[i].Text, want)
+		}
+	}
+	// Lines: 1 "### s", 2 unclosed wikilink, 3 subtask invalid due, 4 task.
+	if tf.Warnings[0].Line != 2 || tf.Warnings[1].Line != 3 {
+		t.Errorf("warning line numbers = [%d %d], want [2 3]",
+			tf.Warnings[0].Line, tf.Warnings[1].Line)
+	}
+	if tf.Warnings[0].Message != "unclosed wikilink" {
+		t.Errorf("warning[0] message = %q, want %q", tf.Warnings[0].Message, "unclosed wikilink")
+	}
+}
+
 func TestParseWarningsLineNumbers(t *testing.T) {
 	tf := parseFile(t, "# H1\n## H2\n[[bare]]\nloose\n\t- orphan\n### s\n- bad due:2030-13-45\n", "")
 	wantLines := []int{1, 2, 3, 4, 5, 7}
