@@ -109,6 +109,125 @@ func TestFilterAll_SubtasksNested(t *testing.T) {
 	}
 }
 
+// TestFilterDue verifies that FilterDue returns only top-level tasks carrying
+// a non-zero Due, sorted ascending by due date, and never includes no-due or
+// subtask-only entries.
+func TestFilterDue(t *testing.T) {
+	tests := []struct {
+		name     string
+		tf       *TaskFile
+		expected []string
+	}{
+		{
+			name:     "nil taskfile",
+			tf:       nil,
+			expected: []string{},
+		},
+		{
+			name:     "no sections",
+			tf:       &TaskFile{},
+			expected: []string{},
+		},
+		{
+			name: "no due dates",
+			tf: &TaskFile{Sections: []Section{{
+				Title: "Today",
+				Tasks: []TaskItem{mkItem("a"), mkItem("b")},
+			}}},
+			expected: []string{},
+		},
+		{
+			name: "single section sorted ascending",
+			tf: &TaskFile{Sections: []Section{{
+				Title: "summer 2030",
+				Tasks: []TaskItem{
+					mkItem("later").withDue(2030, 8, 9),
+					mkItem("sooner").withDue(2030, 7, 6),
+					mkItem("middle").withDue(2030, 7, 13),
+				},
+			}}},
+			expected: []string{"sooner", "middle", "later"},
+		},
+		{
+			name: "across sections grouped then sorted",
+			tf: &TaskFile{Sections: []Section{
+				{Title: "fall 2030", Tasks: []TaskItem{mkItem("fall").withDue(2030, 10, 13)}},
+				{Title: "summer 2030", Tasks: []TaskItem{mkItem("summer").withDue(2030, 7, 6)}},
+			}},
+			expected: []string{"summer", "fall"},
+		},
+		{
+			name: "no-due tasks excluded",
+			tf: &TaskFile{Sections: []Section{{
+				Title: "Today",
+				Tasks: []TaskItem{
+					mkItem("no due"),
+					mkItem("due task").withDue(2030, 7, 6),
+					mkItem("other no due"),
+				},
+			}}},
+			expected: []string{"due task"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := FilterDue(tt.tf)
+			if got == nil {
+				t.Fatalf("FilterDue() returned nil (want non-nil empty slice)")
+			}
+			if len(got) != len(tt.expected) {
+				t.Fatalf("FilterDue() returned %d tasks, want %d: %v", len(got), len(tt.expected), got)
+			}
+			for i, want := range tt.expected {
+				if got[i].Text != want {
+					t.Errorf("FilterDue()[%d].Text = %q, want %q", i, got[i].Text, want)
+				}
+			}
+		})
+	}
+}
+
+// TestFilterDue_Stable verifies that tasks sharing the same due date keep
+// their original file order after sorting.
+func TestFilterDue_Stable(t *testing.T) {
+	tf := &TaskFile{Sections: []Section{{
+		Title: "summer 2030",
+		Tasks: []TaskItem{
+			mkItem("first").withDue(2030, 7, 6),
+			mkItem("second").withDue(2030, 7, 6),
+			mkItem("third").withDue(2030, 7, 6),
+		},
+	}}}
+
+	got := FilterDue(tf)
+	if len(got) != 3 {
+		t.Fatalf("FilterDue() returned %d tasks, want 3", len(got))
+	}
+	if got[0].Text != "first" || got[1].Text != "second" || got[2].Text != "third" {
+		t.Errorf("FilterDue() not stable: got %q, %q, %q; want first, second, third", got[0].Text, got[1].Text, got[2].Text)
+	}
+}
+
+// TestFilterNoDueExcluded verifies that tasks without a due date are never
+// included in FilterDue. (FilterDueToday coverage is added in Task 4.)
+func TestFilterNoDueExcluded(t *testing.T) {
+	withNoDue := mkItem("chore")
+	withDue := mkItem("appointment").withDue(2030, 7, 6)
+	tf := &TaskFile{Sections: []Section{{
+		Title: "Today",
+		Tasks: []TaskItem{withNoDue, withDue, mkItem("errand")},
+	}}}
+
+	got := FilterDue(tf)
+	if len(got) != 1 {
+		t.Fatalf("FilterDue() returned %d tasks, want 1 (only the due one)", len(got))
+	}
+	if got[0].Text != "appointment" {
+		t.Errorf("FilterDue() included no-due task: got %q, want %q", got[0].Text, "appointment")
+	}
+}
+
 // TestFilterAll_DoesNotSort asserts that FilterAll preserves file order even
 // when tasks carry due dates (I/O over sorted data must not reorder).
 func TestFilterAll_DoesNotSort(t *testing.T) {
