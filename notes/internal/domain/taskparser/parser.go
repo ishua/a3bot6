@@ -44,9 +44,195 @@ type TaskFile struct {
 }
 
 // ParseTaskFile parses a task list file into a TaskFile. It never returns an
-// error: unrecognized lines are collected as warnings.
+// error: unrecognized lines are collected as warnings. Parsing stops at the
+// configured stopMarker (when non-empty) or the "---" separator; all remaining
+// lines are silently skipped.
 func ParseTaskFile(lines []string, stopMarker string) *TaskFile {
-	return &TaskFile{}
+	tf := &TaskFile{
+		Sections: make([]Section, 0),
+		Warnings: make([]Warning, 0),
+	}
+	var current *Section
+	idx := 0
+	for idx < len(lines) {
+		line := lines[idx]
+		lineNum := idx + 1
+		if isStopLine(line, stopMarker) {
+			return tf
+		}
+		if strings.TrimSpace(line) == "" {
+			idx++
+			continue
+		}
+		if isSectionHeader(line) {
+			title := strings.TrimSpace(strings.TrimPrefix(line, "###"))
+			tf.Sections = append(tf.Sections, Section{Title: title, Tasks: make([]TaskItem, 0)})
+			current = &tf.Sections[len(tf.Sections)-1]
+			endIdx, warns := parseTasksInSection(lines, idx+1, current)
+			tf.Warnings = append(tf.Warnings, warns...)
+			idx = endIdx
+			continue
+		}
+		if isSubtaskLine(line) {
+			if current == nil || len(current.Tasks) == 0 {
+				tf.Warnings = append(tf.Warnings, Warning{Line: lineNum, Text: line, Message: "subtask without parent"})
+				idx++
+				continue
+			}
+			last := &current.Tasks[len(current.Tasks)-1]
+			subs, end, warns := parseSubtasks(lines, idx, idx+1)
+			last.Subtasks = append(last.Subtasks, subs...)
+			tf.Warnings = append(tf.Warnings, warns...)
+			idx = end
+			continue
+		}
+		if isTaskLine(line) {
+			task, warns := parseTaskLine(line, lineNum)
+			if current == nil {
+				tf.Sections = append(tf.Sections, Section{Tasks: make([]TaskItem, 0)})
+				current = &tf.Sections[len(tf.Sections)-1]
+			}
+			current.Tasks = append(current.Tasks, task)
+			tf.Warnings = append(tf.Warnings, warns...)
+			idx++
+			continue
+		}
+		tf.Warnings = append(tf.Warnings, Warning{Line: lineNum, Text: line, Message: "unrecognized line"})
+		idx++
+	}
+	return tf
+}
+
+// parseTaskLine turns a single task/subtask line into a TaskItem, applying all
+// inline extractions in order: priority, due date, wikilinks, inline links,
+// emojis, then the remaining trimmed text. Warnings (invalid due date, unclosed
+// wikilink) are returned with the line number filled in.
+func parseTaskLine(line string, lineNum int) (TaskItem, []Warning) {
+	warnings := make([]Warning, 0)
+	content := line
+	if strings.HasPrefix(content, "- ") || strings.HasPrefix(content, "* ") {
+		content = content[2:]
+	}
+
+	priority, rest := extractPriority(content)
+
+	due, rest, warn := extractDueDate(rest)
+	if warn != nil {
+		warn.Line = lineNum
+		warn.Text = line
+		warnings = append(warnings, *warn)
+	}
+
+	wikilinks, rest, warns := extractWikilinks(rest)
+	for i := range warns {
+		warns[i].Line = lineNum
+		warns[i].Text = line
+	}
+	warnings = append(warnings, warns...)
+
+	links, rest := extractInlineLinks(rest)
+
+	emojis, rest := extractEmojis(rest)
+
+	return TaskItem{
+		Text:        rest,
+		Due:         due,
+		Priority:    priority,
+		Emojis:      emojis,
+		Wikilinks:   wikilinks,
+		Subtasks:    make([]TaskItem, 0),
+		InlineLinks: links,
+	}, warnings
+}
+
+// indentDepth returns the number of leading whitespace (spaces or tabs)
+// characters in line.
+func indentDepth(line string) int {
+	return len(line) - len(strings.TrimLeft(line, " \t"))
+}
+
+// parseSubtasks parses a run of consecutive subtask lines starting at startIdx,
+// recursing into deeper-indented descendants. It returns the collected subtasks
+// and the index of the first line after the run. lineNumBase is the 1-based line
+// number of the line at startIdx.
+func parseSubtasks(lines []string, startIdx int, lineNumBase int) (subtasks []TaskItem, endIdx int, warnings []Warning) {
+	subtasks = make([]TaskItem, 0)
+	warnings = make([]Warning, 0)
+	myDepth := indentDepth(lines[startIdx])
+	i := startIdx
+	linenum := func(k int) int { return lineNumBase + (k - startIdx) }
+	for i < len(lines) {
+		line := lines[i]
+		if !isSubtaskLine(line) {
+			return subtasks, i, warnings
+		}
+		d := indentDepth(line)
+		switch {
+		case d < myDepth:
+			// Belongs to an outer level; back off.
+			return subtasks, i, warnings
+		case d == myDepth:
+			task, warns := parseTaskLine(strings.TrimLeft(line, " \t"), linenum(i))
+			subtasks = append(subtasks, task)
+			warnings = append(warnings, warns...)
+			i++
+		default: // d > myDepth: child of the last sibling.
+			if len(subtasks) == 0 {
+				warnings = append(warnings, Warning{Line: linenum(i), Text: line, Message: "subtask without parent"})
+				i++
+				continue
+			}
+			last := &subtasks[len(subtasks)-1]
+			childSubs, end, warns := parseSubtasks(lines, i, linenum(i))
+			last.Subtasks = append(last.Subtasks, childSubs...)
+			warnings = append(warnings, warns...)
+			i = end
+		}
+	}
+	return subtasks, i, warnings
+}
+
+// parseTasksInSection parses the body of a section, starting at startIdx, until
+// the next section header, the "---" stop line, or the end of input. It fills
+// section.Tasks (including subtask attachment) and returns the index of the
+// first unprocessed line plus any warnings.
+func parseTasksInSection(lines []string, startIdx int, section *Section) (endIdx int, warnings []Warning) {
+	warnings = make([]Warning, 0)
+	i := startIdx
+	for i < len(lines) {
+		line := lines[i]
+		lineNum := i + 1
+		if isSectionHeader(line) || line == "---" {
+			return i, warnings
+		}
+		if strings.TrimSpace(line) == "" {
+			i++
+			continue
+		}
+		if isSubtaskLine(line) {
+			if len(section.Tasks) == 0 {
+				warnings = append(warnings, Warning{Line: lineNum, Text: line, Message: "subtask without parent"})
+				i++
+				continue
+			}
+			last := &section.Tasks[len(section.Tasks)-1]
+			subs, end, warns := parseSubtasks(lines, i, i+1)
+			last.Subtasks = append(last.Subtasks, subs...)
+			warnings = append(warnings, warns...)
+			i = end
+			continue
+		}
+		if isTaskLine(line) {
+			task, warns := parseTaskLine(line, lineNum)
+			section.Tasks = append(section.Tasks, task)
+			warnings = append(warnings, warns...)
+			i++
+			continue
+		}
+		warnings = append(warnings, Warning{Line: lineNum, Text: line, Message: "unrecognized line"})
+		i++
+	}
+	return i, warnings
 }
 
 // clean collapses runs of whitespace in text into single spaces and trims it.

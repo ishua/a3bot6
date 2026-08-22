@@ -179,25 +179,25 @@ This avoids unicode-range complexity and matches the controlled vocabulary of th
 - Modify: `notes/internal/domain/taskparser/parser.go`
 - Modify: `notes/internal/domain/taskparser/parser_test.go`
 
-- [ ] Write `parseTaskLine(line string, lineNum int) (TaskItem, []Warning)` — applies all inline extractions in defined order, returns warnings from due-date and wikilink extraction (with line numbers filled in)
-- [ ] Write `parseSubtasks(lines []string, startIdx int, lineNumBase int) (subtasks []TaskItem, endIdx int, warnings []Warning)` — recursive subtask parsing
-- [ ] Write `parseTasksInSection(lines []string, startIdx int, section *Section) (endIdx int, warnings []Warning)`
-- [ ] Write `ParseTaskFile(lines []string, stopMarker string) *TaskFile` — main parser
-- [ ] Write `TestParseFullFile` — parse testdata/tasklist.md, verify 4 sections (Today, summer 2030, fall 2030, winter 2031)
-- [ ] Write `TestParseEmptyFile` — empty input → empty TaskFile, no warnings
-- [ ] Write `TestParsePriority` — `(A)` and `(B)` prefix extraction
-- [ ] Write `TestParseDueDate` — valid due, missing due, invalid due date
-- [ ] Write `TestParseEmoji` — emoji tags anywhere in line (including before due date)
-- [ ] Write `TestParseWikilink` — `[[link]]` in different positions, unclosed wikilink
-- [ ] Write `TestParseInlineLink` — `[text](url)` extraction
-- [ ] Write `TestParseSubtask` — nested subtasks with all attributes
-- [ ] Write `TestParseSubtaskNested` — multi-level indentation (inline test with 2+ levels)
-- [ ] Write `TestParseStopMarker` — stop on `### Long` and `---`
-- [ ] Write `TestParseStopMarkerSilentSkip` — lines after stop marker do NOT generate warnings
-- [ ] Write `TestParseSectionHeader` — `### ...` creates sections (including double-space in `###  winter 2031`)
-- [ ] Write `TestParseWarnings` — unrecognized lines: H1, H2, bare wikilink, loose text, subtask without parent
-- [ ] Write `TestParseWarningsLineNumbers` — correct 1-based line numbers in warnings
-- [ ] run tests — must all pass
+- [x] Write `parseTaskLine(line string, lineNum int) (TaskItem, []Warning)` — applies all inline extractions in defined order, returns warnings from due-date and wikilink extraction (with line numbers filled in)
+- [x] Write `parseSubtasks(lines []string, startIdx int, lineNumBase int) (subtasks []TaskItem, endIdx int, warnings []Warning)` — recursive subtask parsing
+- [x] Write `parseTasksInSection(lines []string, startIdx int, section *Section) (endIdx int, warnings []Warning)`
+- [x] Write `ParseTaskFile(lines []string, stopMarker string) *TaskFile` — main parser
+- [x] Write `TestParseFullFile` — parse testdata/tasklist.md, verify 4 sections (Today, summer 2030, fall 2030, winter 2031)
+- [x] Write `TestParseEmptyFile` — empty input → empty TaskFile, no warnings
+- [x] Write `TestParsePriority` — `(A)` and `(B)` prefix extraction
+- [x] Write `TestParseDueDate` — valid due, missing due, invalid due date
+- [x] Write `TestParseEmoji` — emoji tags anywhere in line (including before due date)
+- [x] Write `TestParseWikilink` — `[[link]]` in different positions, unclosed wikilink
+- [x] Write `TestParseInlineLink` — `[text](url)` extraction
+- [x] Write `TestParseSubtask` — nested subtasks with all attributes
+- [x] Write `TestParseSubtaskNested` — multi-level indentation (inline test with 2+ levels)
+- [x] Write `TestParseStopMarker` — stop on `### Long` and `---`
+- [x] Write `TestParseStopMarkerSilentSkip` — lines after stop marker do NOT generate warnings
+- [x] Write `TestParseSectionHeader` — `### ...` creates sections (including double-space in `###  winter 2031`)
+- [x] Write `TestParseWarnings` — unrecognized lines: H1, H2, bare wikilink, loose text, subtask without parent
+- [x] Write `TestParseWarningsLineNumbers` — correct 1-based line numbers in warnings
+- [x] run tests — must all pass
 
 ### Task 5: Verify acceptance criteria
 **Files:** (none)
