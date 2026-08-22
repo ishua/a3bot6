@@ -323,6 +323,46 @@ func TestFilterDueToday_Stable(t *testing.T) {
 	}
 }
 
+// TestSubtasksNotFilteredIndependently verifies that subtasks are never
+// flattened nor returned as independent top-level entries by any filter, even
+// when a subtask carries a due date. The parent task qualifies (it has its own
+// due and appears in "Today"), so every filter returns exactly the parent with
+// its subtasks intact — never a hoisted subtask.
+func TestSubtasksNotFilteredIndependently(t *testing.T) {
+	tf := &TaskFile{Sections: []Section{{
+		Title: "Today",
+		Tasks: []TaskItem{
+			mkItem("parent", mkItem("due sub").withDue(2030, 7, 6), mkItem("plain sub")).withDue(2030, 7, 6),
+		},
+	}}}
+	now := time.Date(2030, 7, 14, 10, 0, 0, 0, time.UTC)
+
+	for _, tt := range []struct {
+		name string
+		got  []TaskItem
+	}{
+		{"FilterAll", FilterAll(tf)},
+		{"FilterToday", FilterToday(tf, now)},
+		{"FilterDue", FilterDue(tf)},
+		{"FilterDueToday", FilterDueToday(tf, now)},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if len(tt.got) != 1 {
+				t.Fatalf("%s returned %d tasks, want exactly 1 (the top-level parent): %v", tt.name, len(tt.got), textOrder(tt.got))
+			}
+			if tt.got[0].Text != "parent" {
+				t.Errorf("%s returned %q as a top-level entry, want only the parent (subtask must not be hoisted)", tt.name, tt.got[0].Text)
+			}
+			if len(tt.got[0].Subtasks) != 2 {
+				t.Fatalf("%s flattened or dropped subtasks: got %d subtasks, want 2", tt.name, len(tt.got[0].Subtasks))
+			}
+			if tt.got[0].Subtasks[0].Text != "due sub" {
+				t.Errorf("%s subtask[0].Text = %q, want %q", tt.name, tt.got[0].Subtasks[0].Text, "due sub")
+			}
+		})
+	}
+}
+
 // TestFilterNoDueExcluded verifies that tasks without a due date are never
 // included in FilterDue or FilterDueToday.
 func TestFilterNoDueExcluded(t *testing.T) {

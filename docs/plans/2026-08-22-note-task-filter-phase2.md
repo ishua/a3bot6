@@ -176,14 +176,14 @@ No new dependencies. Only stdlib: `time`, `sort`.
 ### Task 7: Verify acceptance criteria
 **Files:** (none)
 
-- [ ] `FilterAll(tf)` returns all top-level tasks, file order preserved, subtasks nested
-- [ ] `FilterToday(tf, now)` returns full "Today" section + overdue/today tasks from other sections
-- [ ] `FilterDue(tf)` returns only tasks with non-zero Due, sorted ascending
-- [ ] `FilterDueToday(tf, now)` returns tasks with due AND due <= now, sorted ascending
-- [ ] Subtasks are never flattened, never filtered independently
-- [ ] Empty input → non-nil `[]TaskItem{}`
-- [ ] No "Today" section → `FilterToday` returns only overdue from other sections
-- [ ] run full test suite — all tests pass
+- [x] `FilterAll(tf)` returns all top-level tasks, file order preserved, subtasks nested
+- [x] `FilterToday(tf, now)` returns full "Today" section + overdue/today tasks from other sections
+- [x] `FilterDue(tf)` returns only tasks with non-zero Due, sorted ascending
+- [x] `FilterDueToday(tf, now)` returns tasks with due AND due <= now, sorted ascending
+- [x] Subtasks are never flattened, never filtered independently
+- [x] Empty input → non-nil `[]TaskItem{}`
+- [x] No "Today" section → `FilterToday` returns only overdue from other sections
+- [x] run full test suite — all tests pass
 
 ## Post-Completion
 
