@@ -169,9 +169,9 @@ No new dependencies. Only stdlib: `time`, `sort`.
 ### Task 6: Build verification and vet
 **Files:** (none)
 
-- [ ] `cd notes && go build ./internal/domain/taskparser/...` — compiles cleanly
-- [ ] `cd notes && go test ./internal/domain/taskparser/...` — all tests pass
-- [ ] `cd notes && go vet ./internal/domain/taskparser/...` — no issues
+- [x] `cd notes && go build ./internal/domain/taskparser/...` — compiles cleanly
+- [x] `cd notes && go test ./internal/domain/taskparser/...` — all tests pass
+- [x] `cd notes && go vet ./internal/domain/taskparser/...` — no issues
 
 ### Task 7: Verify acceptance criteria
 **Files:** (none)
