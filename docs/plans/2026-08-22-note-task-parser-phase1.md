@@ -154,9 +154,9 @@ This avoids unicode-range complexity and matches the controlled vocabulary of th
 **Files:**
 - Create: `notes/internal/domain/taskparser/testdata/tasklist.md`
 
-- [ ] Create directory `notes/internal/domain/taskparser/testdata/`
-- [ ] Copy `notes/test_data/tasklist.md` → `notes/internal/domain/taskparser/testdata/tasklist.md`
-- [ ] Verify file content matches (40 lines)
+- [x] Create directory `notes/internal/domain/taskparser/testdata/`
+- [x] Copy `notes/test_data/tasklist.md` → `notes/internal/domain/taskparser/testdata/tasklist.md`
+- [x] Verify file content matches (40 lines)
 
 ### Task 3: Write inline helper functions
 **Files:**
