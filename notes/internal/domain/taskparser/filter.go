@@ -1,6 +1,9 @@
 package taskparser
 
-import "sort"
+import (
+	"sort"
+	"time"
+)
 
 // FilterAll returns all top-level tasks from every section, in file order.
 // Tasks from each section are appended in order they appear; subtasks stay
@@ -49,5 +52,35 @@ func FilterDue(tf *TaskFile) []TaskItem {
 		}
 	}
 	sortByDue(result)
+	return result
+}
+
+// FilterToday returns the entire "Today" section (all its tasks, regardless of
+// due date) followed by overdue/today tasks from other sections (non-zero Due
+// and due <= now). "Today" is matched by exact case-sensitive title. File order
+// is preserved within each group; no sorting. If no "Today" section exists,
+// only overdue/today tasks from other sections are returned. Returns a non-nil
+// empty slice when there is nothing to return.
+func FilterToday(tf *TaskFile, now time.Time) []TaskItem {
+	result := make([]TaskItem, 0)
+	if tf == nil {
+		return result
+	}
+	now = now.Truncate(24 * time.Hour)
+	for _, section := range tf.Sections {
+		if section.Title == "Today" {
+			result = append(result, section.Tasks...)
+		}
+	}
+	for _, section := range tf.Sections {
+		if section.Title == "Today" {
+			continue
+		}
+		for _, task := range section.Tasks {
+			if !task.Due.IsZero() && !task.Due.After(now) {
+				result = append(result, task)
+			}
+		}
+	}
 	return result
 }

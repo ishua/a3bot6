@@ -228,6 +228,152 @@ func TestFilterNoDueExcluded(t *testing.T) {
 	}
 }
 
+// TestFilterToday verifies that FilterToday returns the entire "Today" section
+// (regardless of due date) plus overdue/today tasks from other sections
+// (non-zero Due and due <= now), preserving file order.
+func TestFilterToday(t *testing.T) {
+	tests := []struct {
+		name     string
+		tf       *TaskFile
+		now      time.Time
+		expected []string
+	}{
+		{
+			name:     "nil taskfile",
+			tf:       nil,
+			now:      time.Date(2030, 7, 14, 10, 0, 0, 0, time.UTC),
+			expected: []string{},
+		},
+		{
+			name:     "no sections",
+			tf:       &TaskFile{},
+			now:      time.Date(2030, 7, 14, 10, 0, 0, 0, time.UTC),
+			expected: []string{},
+		},
+		{
+			name: "no Today section returns only overdue from others",
+			tf: &TaskFile{Sections: []Section{{
+				Title: "summer 2030",
+				Tasks: []TaskItem{
+					mkItem("overdue").withDue(2030, 7, 6),
+					mkItem("future").withDue(2030, 8, 9),
+					mkItem("no due"),
+				},
+			}}},
+			now:      time.Date(2030, 7, 14, 10, 0, 0, 0, time.UTC),
+			expected: []string{"overdue"},
+		},
+		{
+			name: "Today section with no-due tasks all included",
+			tf: &TaskFile{Sections: []Section{
+				{Title: "Today", Tasks: []TaskItem{mkItem("chore a"), mkItem("chore b")}},
+				{Title: "summer 2030", Tasks: []TaskItem{mkItem("future").withDue(2030, 8, 9)}},
+			}},
+			now:      time.Date(2030, 7, 14, 10, 0, 0, 0, time.UTC),
+			expected: []string{"chore a", "chore b"},
+		},
+		{
+			name: "Today section tasks included regardless of due",
+			tf: &TaskFile{Sections: []Section{{
+				Title: "Today",
+				Tasks: []TaskItem{
+					mkItem("with due").withDue(2030, 7, 6),
+					mkItem("future due").withDue(2030, 8, 9),
+					mkItem("no due"),
+				},
+			}}},
+			now:      time.Date(2030, 7, 14, 10, 0, 0, 0, time.UTC),
+			expected: []string{"with due", "future due", "no due"},
+		},
+		{
+			name: "other sections included only if due <= now",
+			tf: &TaskFile{Sections: []Section{
+				{Title: "Today", Tasks: []TaskItem{mkItem("wash car")}},
+				{Title: "summer 2030", Tasks: []TaskItem{
+					mkItem("overdue same day").withDue(2030, 7, 14),
+					mkItem("overdue earlier").withDue(2030, 7, 6),
+					mkItem("future").withDue(2030, 8, 9),
+					mkItem("no due"),
+				}},
+			}},
+			now:      time.Date(2030, 7, 14, 10, 0, 0, 0, time.UTC),
+			expected: []string{"wash car", "overdue same day", "overdue earlier"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := FilterToday(tt.tf, tt.now)
+			if got == nil {
+				t.Fatalf("FilterToday() returned nil (want non-nil empty slice)")
+			}
+			if len(got) != len(tt.expected) {
+				t.Fatalf("FilterToday() returned %d tasks, want %d: %v", len(got), len(tt.expected), got)
+			}
+			for i, want := range tt.expected {
+				if got[i].Text != want {
+					t.Errorf("FilterToday()[%d].Text = %q, want %q", i, got[i].Text, want)
+				}
+			}
+		})
+	}
+}
+
+// TestFilterToday_TodayFirst verifies the design ordering: "Today" section
+// tasks come first (in file order), then overdue/today tasks from other
+// sections (in file order), regardless of section title sort.
+func TestFilterToday_TodayFirst(t *testing.T) {
+	tf := &TaskFile{Sections: []Section{
+		{Title: "summer 2030", Tasks: []TaskItem{
+			mkItem("overdue summer").withDue(2030, 7, 6),
+		}},
+		{Title: "Today", Tasks: []TaskItem{
+			mkItem("wash car"),
+			mkItem("buy food").withDue(2030, 7, 6),
+		}},
+		{Title: "fall 2030", Tasks: []TaskItem{
+			mkItem("balance somethin").withDue(2030, 7, 13),
+			mkItem("future").withDue(2030, 8, 9),
+		}},
+	}}
+	now := time.Date(2030, 7, 14, 10, 0, 0, 0, time.UTC)
+
+	got := FilterToday(tf, now)
+	expected := []string{"wash car", "buy food", "overdue summer", "balance somethin"}
+	if len(got) != len(expected) {
+		t.Fatalf("FilterToday() returned %d tasks, want %d: %v", len(got), len(expected), got)
+	}
+	for i, want := range expected {
+		if got[i].Text != want {
+			t.Errorf("FilterToday()[%d].Text = %q, want %q", i, got[i].Text, want)
+		}
+	}
+}
+
+// TestFilterToday_DoesNotSort asserts that FilterToday preserves file order
+// rather than sorting by due date.
+func TestFilterToday_DoesNotSort(t *testing.T) {
+	tf := &TaskFile{Sections: []Section{
+		{Title: "Today", Tasks: []TaskItem{mkItem("a")}},
+		{Title: "summer 2030", Tasks: []TaskItem{
+			mkItem("later in file").withDue(2030, 7, 6),
+			mkItem("earlier in file").withDue(2030, 7, 13),
+		}},
+	}}
+	now := time.Date(2030, 7, 14, 10, 0, 0, 0, time.UTC)
+
+	got := FilterToday(tf, now)
+	expected := []string{"a", "later in file", "earlier in file"}
+	if len(got) != len(expected) {
+		t.Fatalf("FilterToday() returned %d tasks, want %d: %v", len(got), len(expected), got)
+	}
+	for i, want := range expected {
+		if got[i].Text != want {
+			t.Errorf("FilterToday()[%d].Text = %q, want %q", i, got[i].Text, want)
+		}
+	}
+}
+
 // TestFilterAll_DoesNotSort asserts that FilterAll preserves file order even
 // when tasks carry due dates (I/O over sorted data must not reorder).
 func TestFilterAll_DoesNotSort(t *testing.T) {

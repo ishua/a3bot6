@@ -140,9 +140,9 @@ No new dependencies. Only stdlib: `time`, `sort`.
 - Modify: `notes/internal/domain/taskparser/filter.go`
 - Modify: `notes/internal/domain/taskparser/filter_test.go`
 
-- [ ] Write `FilterToday(tf *TaskFile, now time.Time) []TaskItem` — truncate `now` to date; find "Today" section; collect all its tasks; collect overdue/today tasks from other sections; preserve file order
-- [ ] Write test `TestFilterToday` — no "Today" section → only overdue from others; "Today" section with no-due tasks → all included; "Today" section tasks included regardless of due; tasks from other sections included only if due <= now
-- [ ] run tests — must pass before next task
+- [x] Write `FilterToday(tf *TaskFile, now time.Time) []TaskItem` — truncate `now` to date; find "Today" section; collect all its tasks; collect overdue/today tasks from other sections; preserve file order
+- [x] Write test `TestFilterToday` — no "Today" section → only overdue from others; "Today" section with no-due tasks → all included; "Today" section tasks included regardless of due; tasks from other sections included only if due <= now
+- [x] run tests — must pass before next task
 
 ### Task 4: Implement FilterDueToday + tests
 **Files:**
