@@ -18,23 +18,28 @@ Implement Phase 1 of the note task list feature: a tolerant markdown parser for 
 - **Testing approach**: TDD (write tests first, then implementation)
 - Complete each task before moving to next
 - **CRITICAL**: every task MUST include new/updated tests
+  - Exception: Task 2 (data copy only)
 - **CRITICAL**: all tests must pass before starting next task
 
 ## Testing Strategy
 
+- **Test package**: `taskparser` (internal test, same package — needed to test unexported helpers)
+- **Assertions**: stdlib `testing` only (no testify — project has zero test deps currently)
+- **Style**: table-driven tests where applicable
 - Unit tests in `notes/internal/domain/taskparser/parser_test.go`
 - Test data in `notes/internal/domain/taskparser/testdata/tasklist.md`
 - Inline table-driven tests for edge cases
 - Full file parsing test for integration validation
+- **File reading in tests**: `os.ReadFile` + `strings.Split(string(data), "\n")`
 
 ## Solution Overview
 
 A tolerant parser that:
 - Always reads the entire input and returns a `*TaskFile` (never returns an error)
-- Collects warnings for unrecognized lines: line number, text, description
+- Collects warnings for unrecognized lines: line number, text, description. Warnings from inline extraction (invalid due dates, unclosed wikilinks) are propagated into `TaskFile.Warnings`
 - Recognizes sections (`###`), tasks (`-`/`*`), subtasks (indented), stop markers
 - Extracts inline attributes: priority, due dates, emojis, wikilinks, inline links
-- Stops task collection at configured `stopMarker` OR `---`
+- Stops task collection at configured `stopMarker` OR `---`. **After stop marker: all remaining lines are silently skipped** — no further task collection, no further warnings
 
 ## Technical Details
 
@@ -81,22 +86,48 @@ func ParseTaskFile(lines []string, stopMarker string) *TaskFile
 
 ### Line Processing Rules
 
+**Check order in main loop** (first match wins):
+
+1. If `stopMarker != ""` AND `line == stopMarker` → stop (silent skip rest)
+2. `line == "---"` → stop (silent skip rest)
+3. Empty line (after trim) → skip silently
+4. `### ` prefix → Section (title = `strings.TrimSpace(strings.TrimPrefix(line, "###"))`)
+5. Indented `- `/`* ` → subtask under last task
+6. `- `/`* ` at start → task in current section
+7. Anything else → Warning
+
 | Line Pattern | Action |
 |--------------|--------|
 | Empty line | Skip silently |
-| `### ...` | New Section (title = trimmed after `###`) |
+| `### ...` | New Section (title = `TrimSpace(TrimPrefix(line, "###"))` — handles double spaces) |
 | `- ` or `* ` (task) | TaskItem in current section |
 | Tab/space + `- ` or `* ` (subtask) | Subtask under last TaskItem |
-| `stopMarker` OR `---` | Stop parsing tasks, ignore rest |
+| `stopMarker` (if non-empty) OR `---` | Stop parsing, **silently skip all remaining lines** (no warnings) |
 | Unrecognized | Warning |
 
 ### Inline Attribute Extraction (per task line)
+
+**Extraction order** (important — emoji is NOT always trailing in test data, e.g. `💰 due:2030-07-13`):
+
+1. **Priority**: `(A)` or `(B)` at start of task text → strip from text
+2. **Due date**: `due:YYYY-MM-DD` anywhere in text → parse to `time.Time`, strip from text. Invalid date → warning, Due stays zero
+3. **Wikilinks**: `[[link]]` anywhere → extract, strip from text. Unclosed `[[` → warning
+4. **Inline links**: `[text](url)` anywhere → extract, strip from text
+5. **Emojis**: scan remaining text for known emoji characters (see detection below), collect, strip from text
+6. **Text**: what remains after all extractions, trimmed — this is `TaskItem.Text`
+
+Example: `- balance somethin [[finance]] 💰 due:2030-07-13` →
+`TaskItem{Text: "balance somethin", Due: 2030-07-13, Wikilinks: ["finance"], Emojis: ["💰"]}`
+
+**Emoji detection**: use a predefined set of known emoji from the task file: `🏡 💰 📞 🏢`.
+Extract by scanning the text for any of these characters and removing them.
+This avoids unicode-range complexity and matches the controlled vocabulary of the file.
 
 | Pattern | Extraction |
 |---------|------------|
 | `^(A)` / `^(B)` | Priority = "A" or "B" |
 | `due:YYYY-MM-DD` | Parse to `time.Time`; invalid → Warning |
-| Trailing emoji (`🏡`, `💰`, `📞`, `🏢`, etc.) | Collect in `Emojis` |
+| Emoji (`🏡`, `💰`, `📞`, `🏢`) anywhere in remaining text | Collect in `Emojis` |
 | `[[wikilink]]` | Collect in `Wikilinks`; unclosed `[[` → Warning |
 | `[text](url)` | `InlineLink{Text, URL}` |
 
@@ -116,7 +147,7 @@ func ParseTaskFile(lines []string, stopMarker string) *TaskFile
 - [ ] Create directory `notes/internal/domain/taskparser/`
 - [ ] Define `Warning`, `InlineLink`, `TaskItem`, `Section`, `TaskFile` structs
 - [ ] Define `ParseTaskFile(lines []string, stopMarker string) *TaskFile` function signature
-- [ ] Add required imports (`time`, `fmt`)
+- [ ] Add required import (`time` only at this stage; `fmt` added in Task 3)
 - [ ] run `go build` — verify package compiles
 
 ### Task 2: Copy test data
@@ -134,10 +165,10 @@ func ParseTaskFile(lines []string, stopMarker string) *TaskFile
 - [ ] Write `isTaskLine(line string) bool` — returns true for lines starting with `- ` or `* `
 - [ ] Write `isSubtaskLine(line string) bool` — returns true for lines with leading tab/spaces then `- ` or `* `
 - [ ] Write `isSectionHeader(line string) bool` — returns true for lines starting with `### `
-- [ ] Write `isStopLine(line, stopMarker string) bool` — returns true for `line == stopMarker` or `line == "---"`
+- [ ] Write `isStopLine(line, stopMarker string) bool` — returns true for `line == stopMarker` (only if `stopMarker != ""`) or `line == "---"`
 - [ ] Write `extractPriority(line string) (priority string, rest string)` — extracts `(A)` or `(B)`
-- [ ] Write `extractDueDate(text string) (time.Time, string, bool)` — parses `due:YYYY-MM-DD`
-- [ ] Write `extractEmojis(text string) (emojis []string, rest string)` — extracts trailing emoji characters
+- [ ] Write `extractDueDate(text string) (due time.Time, rest string, warning *Warning)` — parses `due:YYYY-MM-DD`; invalid date → non-nil warning (caller fills line number)
+- [ ] Write `extractEmojis(text string) (emojis []string, rest string)` — extracts known emoji (`🏡 💰 📞 🏢`) from anywhere in text
 - [ ] Write `extractWikilinks(text string) (wikilinks []string, rest string, warnings []Warning)` — extracts `[[wikilink]]`
 - [ ] Write `extractInlineLinks(text string) (links []InlineLink, rest string)` — extracts `[text](url)`
 - [ ] Write tests for all helper functions (table-driven)
@@ -148,20 +179,22 @@ func ParseTaskFile(lines []string, stopMarker string) *TaskFile
 - Modify: `notes/internal/domain/taskparser/parser.go`
 - Modify: `notes/internal/domain/taskparser/parser_test.go`
 
-- [ ] Write `parseTaskLine(line string) TaskItem` — applies all inline extractions
-- [ ] Write `parseSubtasks(lines []string, startIdx int) (subtasks []TaskItem, endIdx int)` — recursive subtask parsing
+- [ ] Write `parseTaskLine(line string, lineNum int) (TaskItem, []Warning)` — applies all inline extractions in defined order, returns warnings from due-date and wikilink extraction (with line numbers filled in)
+- [ ] Write `parseSubtasks(lines []string, startIdx int, lineNumBase int) (subtasks []TaskItem, endIdx int, warnings []Warning)` — recursive subtask parsing
 - [ ] Write `parseTasksInSection(lines []string, startIdx int, section *Section) (endIdx int, warnings []Warning)`
 - [ ] Write `ParseTaskFile(lines []string, stopMarker string) *TaskFile` — main parser
 - [ ] Write `TestParseFullFile` — parse testdata/tasklist.md, verify 4 sections (Today, summer 2030, fall 2030, winter 2031)
 - [ ] Write `TestParseEmptyFile` — empty input → empty TaskFile, no warnings
 - [ ] Write `TestParsePriority` — `(A)` and `(B)` prefix extraction
 - [ ] Write `TestParseDueDate` — valid due, missing due, invalid due date
-- [ ] Write `TestParseEmoji` — emoji tags at end of line
+- [ ] Write `TestParseEmoji` — emoji tags anywhere in line (including before due date)
 - [ ] Write `TestParseWikilink` — `[[link]]` in different positions, unclosed wikilink
 - [ ] Write `TestParseInlineLink` — `[text](url)` extraction
 - [ ] Write `TestParseSubtask` — nested subtasks with all attributes
+- [ ] Write `TestParseSubtaskNested` — multi-level indentation (inline test with 2+ levels)
 - [ ] Write `TestParseStopMarker` — stop on `### Long` and `---`
-- [ ] Write `TestParseSectionHeader` — `### ...` creates sections
+- [ ] Write `TestParseStopMarkerSilentSkip` — lines after stop marker do NOT generate warnings
+- [ ] Write `TestParseSectionHeader` — `### ...` creates sections (including double-space in `###  winter 2031`)
 - [ ] Write `TestParseWarnings` — unrecognized lines: H1, H2, bare wikilink, loose text, subtask without parent
 - [ ] Write `TestParseWarningsLineNumbers` — correct 1-based line numbers in warnings
 - [ ] run tests — must all pass
@@ -174,7 +207,9 @@ func ParseTaskFile(lines []string, stopMarker string) *TaskFile
 - [ ] Tasks contain: priority (A/B), due dates, emojis, wikilinks, inline links
 - [ ] Subtasks parsed with correct parent relationship
 - [ ] Stop marker (`### Long`) and `---` both stop task collection
+- [ ] Lines after stop marker are silently skipped (no warnings)
 - [ ] Warnings generated for: `#` H1, `##` H2, bare wikilink on line, loose text, invalid due date
+- [ ] Warnings from inline extraction (invalid due date, unclosed wikilink) propagated to `TaskFile.Warnings`
 - [ ] Warnings include correct 1-based line numbers
 - [ ] run full test suite — all tests pass
 
