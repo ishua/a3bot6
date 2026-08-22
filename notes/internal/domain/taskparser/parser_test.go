@@ -10,7 +10,7 @@ import (
 
 func mustTime(t *testing.T, s string) time.Time {
 	t.Helper()
-	tm, err := time.Parse("2006-01-02", s)
+	tm, err := time.Parse(dateLayout, s)
 	if err != nil {
 		t.Fatalf("bad time %q: %v", s, err)
 	}
@@ -135,7 +135,7 @@ func TestExtractPriority(t *testing.T) {
 }
 
 func TestExtractDueDate(t *testing.T) {
-	valid, _ := time.Parse("2006-01-02", "2030-07-13")
+	valid, _ := time.Parse(dateLayout, "2030-07-13")
 	tests := []struct {
 		name     string
 		text     string

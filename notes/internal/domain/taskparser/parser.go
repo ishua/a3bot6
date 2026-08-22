@@ -7,6 +7,26 @@ import (
 	"time"
 )
 
+const (
+	// dateLayout is the date format used for due:YYYY-MM-DD tokens.
+	dateLayout = "2006-01-02"
+
+	// bullet markers introducing a task line.
+	bulletDash = "- "
+	bulletStar = "* "
+
+	// stopSeparator marks the end of task collection.
+	stopSeparator = "---"
+)
+
+// knownEmojis is the controlled emoji vocabulary present in task files.
+var knownEmojis = map[rune]struct{}{
+	'🏡': {},
+	'💰': {},
+	'📞': {},
+	'🏢': {},
+}
+
 // Warning describes an unrecognized or partially-invalid line.
 type Warning struct {
 	Line    int    // 1-based line number
@@ -108,24 +128,18 @@ func ParseTaskFile(lines []string, stopMarker string) *TaskFile {
 func parseTaskLine(line string, lineNum int) (TaskItem, []Warning) {
 	warnings := make([]Warning, 0)
 	content := strings.TrimLeft(line, " \t")
-	if strings.HasPrefix(content, "- ") || strings.HasPrefix(content, "* ") {
+	if strings.HasPrefix(content, bulletDash) || strings.HasPrefix(content, bulletStar) {
 		content = content[2:]
 	}
 
 	priority, rest := extractPriority(content)
 
 	due, rest, warns := extractDueDate(rest)
-	for i := range warns {
-		warns[i].Line = lineNum
-		warns[i].Text = line
-	}
+	decorateWarnings(warns, lineNum, line)
 	warnings = append(warnings, warns...)
 
 	wikilinks, rest, warns := extractWikilinks(rest)
-	for i := range warns {
-		warns[i].Line = lineNum
-		warns[i].Text = line
-	}
+	decorateWarnings(warns, lineNum, line)
 	warnings = append(warnings, warns...)
 
 	links, rest := extractInlineLinks(rest)
@@ -141,6 +155,15 @@ func parseTaskLine(line string, lineNum int) (TaskItem, []Warning) {
 		Subtasks:    make([]TaskItem, 0),
 		InlineLinks: links,
 	}, warnings
+}
+
+// decorateWarnings fills in the line number and original line text on warnings
+// produced by inline extraction helpers that do not know their source line.
+func decorateWarnings(warns []Warning, lineNum int, line string) {
+	for i := range warns {
+		warns[i].Line = lineNum
+		warns[i].Text = line
+	}
 }
 
 // indentDepth returns the number of leading whitespace (spaces or tabs)
@@ -252,7 +275,7 @@ func clean(text string) string {
 
 // isTaskLine reports whether line is a task line: it starts with "- " or "* ".
 func isTaskLine(line string) bool {
-	return strings.HasPrefix(line, "- ") || strings.HasPrefix(line, "* ")
+	return strings.HasPrefix(line, bulletDash) || strings.HasPrefix(line, bulletStar)
 }
 
 // isSubtaskLine reports whether line is a subtask line: it has leading
@@ -273,7 +296,7 @@ func isStopLine(line, stopMarker string) bool {
 	if stopMarker != "" && line == stopMarker {
 		return true
 	}
-	return line == "---"
+	return line == stopSeparator
 }
 
 // extractPriority pulls a leading "(A)" or "(B)" marker off line, returning the
@@ -303,23 +326,22 @@ func extractDueDate(text string) (due time.Time, rest string, warnings []Warning
 	token := text[loc[0]:loc[1]]
 	value := text[loc[2]:loc[3]]
 	rest = clean(text[:loc[0]] + text[loc[1]:])
-	dueParsed, err := time.Parse("2006-01-02", value)
+	dueParsed, err := time.Parse(dateLayout, value)
 	if err != nil {
 		return time.Time{}, rest, []Warning{{Message: fmt.Sprintf("invalid due date %q", token)}}
 	}
 	return dueParsed, rest, warnings
 }
 
-// extractEmojis pulls out any known emoji characters (🏡 💰 📞 🏢) found anywhere
-// in text, returning them in order of appearance and the text with them removed.
+// extractEmojis pulls out any emoji in knownEmojis found anywhere in text,
+// returning them in order of appearance and the text with them removed.
 func extractEmojis(text string) (emojis []string, rest string) {
 	emojis = make([]string, 0)
 	var sb strings.Builder
 	for _, r := range text {
-		switch r {
-		case '🏡', '💰', '📞', '🏢':
+		if _, ok := knownEmojis[r]; ok {
 			emojis = append(emojis, string(r))
-		default:
+		} else {
 			sb.WriteRune(r)
 		}
 	}
