@@ -1,6 +1,8 @@
 package taskparser
 
 import (
+	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -516,5 +518,152 @@ func TestFilterAll_DoesNotSort(t *testing.T) {
 	}
 	if got[0].Text != "later" || got[1].Text != "earlier" {
 		t.Errorf("FilterAll() reordered tasks: got %q, %q; want %q, %q", got[0].Text, got[1].Text, "later", "earlier")
+	}
+}
+
+// loadTestTaskFile reads testdata/tasklist.md with os.ReadFile + strings.Split
+// and parses it with ParseTaskFile, stopping at the "### Long" marker. It
+// fails the test if the fixture cannot be loaded or the section layout changes.
+func loadTestTaskFile(t *testing.T) *TaskFile {
+	t.Helper()
+	raw, err := os.ReadFile("testdata/tasklist.md")
+	if err != nil {
+		t.Fatalf("os.ReadFile(testdata/tasklist.md): %v", err)
+	}
+	lines := strings.Split(string(raw), "\n")
+	tf := ParseTaskFile(lines, "### Long")
+
+	// Verify the top-level task count per section so the other integration
+	// tests assert against a stable, understood fixture.
+	wantTitles := []string{"Today", "summer 2030", "fall 2030", "winter 2031"}
+	wantCounts := []int{6, 3, 1, 1}
+	if len(tf.Sections) != len(wantTitles) {
+		t.Fatalf("parsed %d sections, want %d: %v", len(tf.Sections), len(wantTitles), sectionTitles(tf))
+	}
+	total := 0
+	for i, want := range wantCounts {
+		if tf.Sections[i].Title != wantTitles[i] {
+			t.Errorf("section[%d].Title = %q, want %q", i, tf.Sections[i].Title, wantTitles[i])
+		}
+		if got := len(tf.Sections[i].Tasks); got != want {
+			t.Errorf("section %q has %d top-level tasks, want %d", wantTitles[i], got, want)
+		}
+		total += len(tf.Sections[i].Tasks)
+	}
+	if total != 11 {
+		t.Errorf("total top-level tasks = %d, want 11", total)
+	}
+	return tf
+}
+
+func sectionTitles(tf *TaskFile) []string {
+	titles := make([]string, 0, len(tf.Sections))
+	for _, s := range tf.Sections {
+		titles = append(titles, s.Title)
+	}
+	return titles
+}
+
+// textOrders returns the task texts in the given order for comparison.
+func textOrder(tasks []TaskItem) []string {
+	out := make([]string, len(tasks))
+	for i, task := range tasks {
+		out[i] = task.Text
+	}
+	return out
+}
+
+func TestFilterAll_Integration(t *testing.T) {
+	tf := loadTestTaskFile(t)
+
+	got := FilterAll(tf)
+	if len(got) != 11 {
+		t.Fatalf("FilterAll() returned %d tasks, want 11", len(got))
+	}
+	if got[0].Text != "wash car" {
+		t.Errorf("FilterAll()[0].Text = %q, want %q (first in file order)", got[0].Text, "wash car")
+	}
+	if got[len(got)-1].Text != "buy medecin" {
+		t.Errorf("FilterAll() last .Text = %q, want %q (last in file order)", got[len(got)-1].Text, "buy medecin")
+	}
+	// Spot-check a couple of the middle entries to confirm section order.
+	if got[5].Text != "create something2" {
+		t.Errorf("FilterAll()[5].Text = %q, want %q (last Today task)", got[5].Text, "create something2")
+	}
+	if got[6].Text != "balance somethin" {
+		t.Errorf("FilterAll()[6].Text = %q, want %q (first summer task)", got[6].Text, "balance somethin")
+	}
+}
+
+func TestFilterDue_Integration(t *testing.T) {
+	tf := loadTestTaskFile(t)
+
+	got := FilterDue(tf)
+	if len(got) != 5 {
+		t.Fatalf("FilterDue() returned %d tasks, want 5: %v", len(got), textOrder(got))
+	}
+	wantTexts := []string{"wash car", "balance somethin", "pay somethin", "balance somethin", "buy medecin"}
+	wantDues := []string{"2030-07-06", "2030-07-13", "2030-08-09", "2030-10-13", "2031-01-15"}
+	for i := range wantTexts {
+		if got[i].Text != wantTexts[i] {
+			t.Errorf("FilterDue()[%d].Text = %q, want %q", i, got[i].Text, wantTexts[i])
+		}
+		gotDue := got[i].Due.Format("2006-01-02")
+		if gotDue != wantDues[i] {
+			t.Errorf("FilterDue()[%d].Due = %q, want %q (ascending)", i, gotDue, wantDues[i])
+		}
+	}
+	// The two "balance somethin" entries must both be present.
+	for i := 1; i < len(got); i++ {
+		if got[i].Due.Before(got[i-1].Due) {
+			t.Errorf("FilterDue() not sorted ascending at position %d: %v before %v", i, got[i].Due, got[i-1].Due)
+		}
+	}
+}
+
+func TestFilterToday_Integration(t *testing.T) {
+	tf := loadTestTaskFile(t)
+	now := time.Date(2030, 7, 14, 12, 0, 0, 0, time.UTC)
+
+	got := FilterToday(tf, now)
+	if len(got) != 7 {
+		t.Fatalf("FilterToday() returned %d tasks, want 7 (6 Today + summer overdue): %v", len(got), textOrder(got))
+	}
+	if got[0].Text != "wash car" {
+		t.Errorf("FilterToday()[0].Text = %q, want %q", got[0].Text, "wash car")
+	}
+	if got[len(got)-1].Text != "balance somethin" {
+		t.Errorf("FilterToday() last .Text = %q, want %q (summer overdue)", got[len(got)-1].Text, "balance somethin")
+	}
+	// First six must be the full Today section, in file order.
+	wantToday := []string{"wash car", "learn something", "clean kitchen", "clean bathroom", "create something", "create something2"}
+	for i, want := range wantToday {
+		if got[i].Text != want {
+			t.Errorf("FilterToday()[%d].Text = %q, want %q (Today section)", i, got[i].Text, want)
+		}
+	}
+	// The lone non-Today addition must be the overdue summer "balance somethin".
+	if got[6].Due.Format("2006-01-02") != "2030-07-13" {
+		t.Errorf("FilterToday()[6].Due = %q, want %q (2030-07-13 overdue)", got[6].Due.Format("2006-01-02"), "2030-07-13")
+	}
+}
+
+func TestFilterDueToday_Integration(t *testing.T) {
+	tf := loadTestTaskFile(t)
+	now := time.Date(2030, 7, 14, 12, 0, 0, 0, time.UTC)
+
+	got := FilterDueToday(tf, now)
+	if len(got) != 2 {
+		t.Fatalf("FilterDueToday() returned %d tasks, want 2: %v", len(got), textOrder(got))
+	}
+	wantTexts := []string{"wash car", "balance somethin"}
+	wantDues := []string{"2030-07-06", "2030-07-13"}
+	for i, want := range wantTexts {
+		if got[i].Text != want {
+			t.Errorf("FilterDueToday()[%d].Text = %q, want %q", i, got[i].Text, want)
+		}
+		if gotDue := got[i].Due.Format("2006-01-02"); gotDue != wantDues[i] {
+			t.Errorf("FilterDueToday()[%d].Due = %q, want %q (ascending)", i, gotDue, wantDues[i])
+		}
 	}
 }

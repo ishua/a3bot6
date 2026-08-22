@@ -157,14 +157,14 @@ No new dependencies. Only stdlib: `time`, `sort`.
 **Files:**
 - Modify: `notes/internal/domain/taskparser/filter_test.go`
 
-- [ ] Load `testdata/tasklist.md`, parse with `ParseTaskFile(..., "### Long")`
-- [ ] Verify top-level task counts per section: Today=6, summer=3, fall=1, winter=1, total=11
-- [ ] `TestFilterAll_Integration`: verify 11 tasks returned, file order (first="wash car", last="buy medecin")
-- [ ] `TestFilterDue_Integration`: verify 5 tasks with due, sorted: 2030-07-06, 2030-07-13, 2030-08-09, 2030-10-13, 2031-01-15
-- [ ] `TestFilterToday_Integration`: `now=2030-07-14` → all 6 Today tasks + summer task `due:2030-07-13` (overdue) = 7 tasks, file order (first="wash car", last="balance somethin")
-- [ ] `TestFilterDueToday_Integration`: `now=2030-07-14` → 2 tasks (wash car 2030-07-06, balance somethin 2030-07-13), sorted ascending
-- [ ] `TestFilterNoDueExcluded`: verify tasks without due dates are never included in `FilterDue` / `FilterDueToday` (unit-level, can be placed in Task 2 or 4 instead)
-- [ ] run tests — must all pass
+- [x] Load `testdata/tasklist.md`, parse with `ParseTaskFile(..., "### Long")`
+- [x] Verify top-level task counts per section: Today=6, summer=3, fall=1, winter=1, total=11
+- [x] `TestFilterAll_Integration`: verify 11 tasks returned, file order (first="wash car", last="buy medecin")
+- [x] `TestFilterDue_Integration`: verify 5 tasks with due, sorted: due dates 2030-07-06, 2030-07-13, 2030-08-09, 2030-10-13, 2031-01-15 (in that ascending order)
+- [x] `TestFilterToday_Integration`: `now=2030-07-14` → all 6 Today tasks + summer task `due:2030-07-13` (overdue) = 7 tasks, file order (first="wash car", last="balance somethin")
+- [x] `TestFilterDueToday_Integration`: `now=2030-07-14` → 2 tasks (wash car 2030-07-06, balance somethin 2030-07-13), sorted ascending
+- [x] `TestFilterNoDueExcluded`: verify tasks without due dates are never included in `FilterDue` / `FilterDueToday` (unit-level, can be placed in Task 2 or 4 instead)
+- [x] run tests — must all pass
 
 ### Task 6: Build verification and vet
 **Files:** (none)
