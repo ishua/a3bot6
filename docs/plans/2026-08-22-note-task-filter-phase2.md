@@ -31,6 +31,14 @@ Implement Phase 2 of the note task list feature: four standalone filter function
 - `os.ReadFile` + `strings.Split` for file loading in integration test
 - All filter functions are exported (capitalized), so tests can live in the same package
 
+## Deviations from feature plan
+
+The following are intentional changes from `.opencode/plans/2026-06-17-note-task-list.md` (Phase 2 section), confirmed during plan creation:
+
+1. **FilterDueToday semantics**: Feature plan says "только Today без просроченных". This plan redefines it as "tasks with non-zero Due AND `due <= now`, from any section" — i.e. overdue + today, cross-section. Rationale: user clarified that "due today" should show everything due (including overdue), not just the Today section.
+2. **`now time.Time` parameter**: Feature plan specifies `FilterToday(tf)` and `FilterDueToday(tf)` without a time parameter. This plan adds `now time.Time` to both for deterministic testing. Phase 4 must pass `time.Now()`.
+3. **`due <= now` (inclusive) vs `due < today` (strict)**: Feature plan says "due < сегодня". This plan uses `!due.After(now)` (inclusive). Rationale: a task due today is relevant "today". Confirmed by user.
+
 ## Solution Overview
 
 Four independent filter functions:
@@ -113,9 +121,9 @@ No new dependencies. Only stdlib: `time`, `sort`.
 - Create: `notes/internal/domain/taskparser/filter.go`
 - Create: `notes/internal/domain/taskparser/filter_test.go`
 
-- [ ] Write `FilterAll(tf *TaskFile) []TaskItem` — iterate `tf.Sections`, collect all `section.Tasks` into result slice in order
-- [ ] Write test `TestFilterAll` — empty TaskFile → empty slice; single section; multiple sections; verify order preserved
-- [ ] run tests — must pass before next task
+- [x] Write `FilterAll(tf *TaskFile) []TaskItem` — iterate `tf.Sections`, collect all `section.Tasks` into result slice in order
+- [x] Write test `TestFilterAll` — empty TaskFile → empty slice; single section; multiple sections; verify order preserved
+- [x] run tests — must pass before next task
 
 ### Task 2: Implement FilterDue + sort helper + tests
 **Files:**
@@ -150,11 +158,12 @@ No new dependencies. Only stdlib: `time`, `sort`.
 - Modify: `notes/internal/domain/taskparser/filter_test.go`
 
 - [ ] Load `testdata/tasklist.md`, parse with `ParseTaskFile(..., "### Long")`
-- [ ] `TestFilterAll`: verify total count of top-level tasks from all 4 sections (Today: 8 tasks, summer: 3, fall: 1, winter: 1 → total 13); verify first and last task text
-- [ ] `TestFilterDue`: verify tasks with due dates are returned; verify ordering (2030-07-06, 2030-07-13, 2030-08-09, 2030-10-13, 2031-01-15)
-- [ ] `TestFilterToday`: pick a `now` of 2030-07-10 — should include all Today section tasks (8) plus the 2030-07-06 overdue task from Today; summer task 2030-07-13 is future → excluded; verify count
-- [ ] `TestFilterDueToday`: same `now` 2030-07-10 — should include: Today task with due 2030-07-06 (overdue), and summer task 2030-07-13 is future → excluded; verify count and sorting
-- [ ] `TestFilterDueToday_noDueIncluded`: verify tasks without due dates are never included in `FilterDue` / `FilterDueToday`
+- [ ] Verify top-level task counts per section: Today=6, summer=3, fall=1, winter=1, total=11
+- [ ] `TestFilterAll_Integration`: verify 11 tasks returned, file order (first="wash car", last="buy medecin")
+- [ ] `TestFilterDue_Integration`: verify 5 tasks with due, sorted: 2030-07-06, 2030-07-13, 2030-08-09, 2030-10-13, 2031-01-15
+- [ ] `TestFilterToday_Integration`: `now=2030-07-14` → all 6 Today tasks + summer task `due:2030-07-13` (overdue) = 7 tasks, file order (first="wash car", last="balance somethin")
+- [ ] `TestFilterDueToday_Integration`: `now=2030-07-14` → 2 tasks (wash car 2030-07-06, balance somethin 2030-07-13), sorted ascending
+- [ ] `TestFilterNoDueExcluded`: verify tasks without due dates are never included in `FilterDue` / `FilterDueToday` (unit-level, can be placed in Task 2 or 4 instead)
 - [ ] run tests — must all pass
 
 ### Task 6: Build verification and vet
