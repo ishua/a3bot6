@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+const (
+	// todaySectionTitle is the case-sensitive section title treated specially
+	// by FilterToday. Tasks in this section are always returned regardless of
+	// due date.
+	todaySectionTitle = "Today"
+)
+
 // FilterAll returns all top-level tasks from every section, in file order.
 // Tasks from each section are appended in order they appear; subtasks stay
 // nested inside their parent TaskItem and are never flattened. Returns a
@@ -26,6 +33,7 @@ func FilterAll(tf *TaskFile) []TaskItem {
 func sortByDue(tasks []TaskItem) {
 	sort.SliceStable(tasks, func(i, j int) bool {
 		di, dj := tasks[i].Due, tasks[j].Due
+		// Zero (unset) Due always sorts last, even when both are non-zero.
 		if di.IsZero() {
 			return false
 		}
@@ -36,21 +44,45 @@ func sortByDue(tasks []TaskItem) {
 	})
 }
 
-// FilterDue returns all top-level tasks (from any section) that have a
-// non-zero Due, sorted ascending by Due date. Tasks with no due date are
-// excluded. Returns a non-nil empty slice when there is nothing to return.
-func FilterDue(tf *TaskFile) []TaskItem {
+// startOfDay truncates t to the start of its day (midnight UTC).
+func startOfDay(t time.Time) time.Time {
+	return t.Truncate(24 * time.Hour)
+}
+
+// dueOnOrBefore reports whether task carries a non-zero Due on or before day
+// (i.e. due today or overdue).
+func dueOnOrBefore(task TaskItem, day time.Time) bool {
+	return !task.Due.IsZero() && !task.Due.After(day)
+}
+
+// collectDue returns the top-level tasks from all sections, skipping the
+// section titled skipTitle (which is ignored when empty), for which due
+// returns true. The result preserves file order and is non-nil when empty.
+func collectDue(tf *TaskFile, skipTitle string, due func(TaskItem) bool) []TaskItem {
 	result := make([]TaskItem, 0)
-	if tf == nil {
-		return result
-	}
 	for _, section := range tf.Sections {
+		if skipTitle != "" && section.Title == skipTitle {
+			continue
+		}
 		for _, task := range section.Tasks {
-			if !task.Due.IsZero() {
+			if due(task) {
 				result = append(result, task)
 			}
 		}
 	}
+	return result
+}
+
+// FilterDue returns all top-level tasks (from any section) that have a
+// non-zero Due, sorted ascending by Due date. Tasks with no due date are
+// excluded. Returns a non-nil empty slice when there is nothing to return.
+func FilterDue(tf *TaskFile) []TaskItem {
+	if tf == nil {
+		return make([]TaskItem, 0)
+	}
+	result := collectDue(tf, "", func(task TaskItem) bool {
+		return !task.Due.IsZero()
+	})
 	sortByDue(result)
 	return result
 }
@@ -66,22 +98,15 @@ func FilterToday(tf *TaskFile, now time.Time) []TaskItem {
 	if tf == nil {
 		return result
 	}
-	now = now.Truncate(24 * time.Hour)
+	day := startOfDay(now)
 	for _, section := range tf.Sections {
-		if section.Title == "Today" {
+		if section.Title == todaySectionTitle {
 			result = append(result, section.Tasks...)
 		}
 	}
-	for _, section := range tf.Sections {
-		if section.Title == "Today" {
-			continue
-		}
-		for _, task := range section.Tasks {
-			if !task.Due.IsZero() && !task.Due.After(now) {
-				result = append(result, task)
-			}
-		}
-	}
+	result = append(result, collectDue(tf, todaySectionTitle, func(task TaskItem) bool {
+		return dueOnOrBefore(task, day)
+	})...)
 	return result
 }
 
@@ -91,18 +116,13 @@ func FilterToday(tf *TaskFile, now time.Time) []TaskItem {
 // task due today is included regardless of the current time of day. Returns a
 // non-nil empty slice when there is nothing to return.
 func FilterDueToday(tf *TaskFile, now time.Time) []TaskItem {
-	result := make([]TaskItem, 0)
 	if tf == nil {
-		return result
+		return make([]TaskItem, 0)
 	}
-	now = now.Truncate(24 * time.Hour)
-	for _, section := range tf.Sections {
-		for _, task := range section.Tasks {
-			if !task.Due.IsZero() && !task.Due.After(now) {
-				result = append(result, task)
-			}
-		}
-	}
+	day := startOfDay(now)
+	result := collectDue(tf, "", func(task TaskItem) bool {
+		return dueOnOrBefore(task, day)
+	})
 	sortByDue(result)
 	return result
 }

@@ -211,6 +211,27 @@ func TestFilterDue_Stable(t *testing.T) {
 	}
 }
 
+// TestSortByDue_ZeroLast verifies sortByDue orders tasks ascending by Due with
+// zero (unset) Due sorting last, while preserving original relative order for
+// equal Dues (stability).
+func TestSortByDue_ZeroLast(t *testing.T) {
+	tasks := []TaskItem{
+		mkItem("b").withDue(2030, 7, 13),
+		mkItem("a zero"),
+		mkItem("a").withDue(2030, 7, 6),
+		mkItem("c zero"),
+	}
+
+	sortByDue(tasks)
+
+	want := []string{"a", "b", "a zero", "c zero"}
+	for i, w := range want {
+		if tasks[i].Text != w {
+			t.Errorf("sortByDue()[%d].Text = %q, want %q", i, tasks[i].Text, w)
+		}
+	}
+}
+
 // TestFilterDueToday verifies that FilterDueToday returns only top-level
 // tasks carrying a non-zero Due whose due date is on or before now (today or
 // overdue), sorted ascending by due date, and excludes no-due and future tasks.
@@ -450,6 +471,21 @@ func TestFilterToday(t *testing.T) {
 			expected: []string{"with due", "future due", "no due"},
 		},
 		{
+			name: "case-insensitive today titles treated as regular sections",
+			tf: &TaskFile{Sections: []Section{
+				{Title: "today", Tasks: []TaskItem{
+					mkItem("lower due").withDue(2030, 7, 6),
+					mkItem("lower no due"),
+				}},
+				{Title: "TODAY", Tasks: []TaskItem{
+					mkItem("upper due").withDue(2030, 7, 6),
+					mkItem("upper no due"),
+				}},
+			}},
+			now:      time.Date(2030, 7, 14, 10, 0, 0, 0, time.UTC),
+			expected: []string{"lower due", "upper due"},
+		},
+		{
 			name: "other sections included only if due <= now",
 			tf: &TaskFile{Sections: []Section{
 				{Title: "Today", Tasks: []TaskItem{mkItem("wash car")}},
@@ -604,7 +640,7 @@ func sectionTitles(tf *TaskFile) []string {
 	return titles
 }
 
-// textOrders returns the task texts in the given order for comparison.
+// textOrder returns the task texts in the given order for comparison.
 func textOrder(tasks []TaskItem) []string {
 	out := make([]string, len(tasks))
 	for i, task := range tasks {
