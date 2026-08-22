@@ -162,17 +162,17 @@ This avoids unicode-range complexity and matches the controlled vocabulary of th
 **Files:**
 - Modify: `notes/internal/domain/taskparser/parser.go`
 
-- [ ] Write `isTaskLine(line string) bool` — returns true for lines starting with `- ` or `* `
-- [ ] Write `isSubtaskLine(line string) bool` — returns true for lines with leading tab/spaces then `- ` or `* `
-- [ ] Write `isSectionHeader(line string) bool` — returns true for lines starting with `### `
-- [ ] Write `isStopLine(line, stopMarker string) bool` — returns true for `line == stopMarker` (only if `stopMarker != ""`) or `line == "---"`
-- [ ] Write `extractPriority(line string) (priority string, rest string)` — extracts `(A)` or `(B)`
-- [ ] Write `extractDueDate(text string) (due time.Time, rest string, warning *Warning)` — parses `due:YYYY-MM-DD`; invalid date → non-nil warning (caller fills line number)
-- [ ] Write `extractEmojis(text string) (emojis []string, rest string)` — extracts known emoji (`🏡 💰 📞 🏢`) from anywhere in text
-- [ ] Write `extractWikilinks(text string) (wikilinks []string, rest string, warnings []Warning)` — extracts `[[wikilink]]`
-- [ ] Write `extractInlineLinks(text string) (links []InlineLink, rest string)` — extracts `[text](url)`
-- [ ] Write tests for all helper functions (table-driven)
-- [ ] run tests — must pass before next task
+- [x] Write `isTaskLine(line string) bool` — returns true for lines starting with `- ` or `* `
+- [x] Write `isSubtaskLine(line string) bool` — returns true for lines with leading tab/spaces then `- ` or `* `
+- [x] Write `isSectionHeader(line string) bool` — returns true for lines starting with `### `
+- [x] Write `isStopLine(line, stopMarker string) bool` — returns true for `line == stopMarker` (only if `stopMarker != ""`) or `line == "---"`
+- [x] Write `extractPriority(line string) (priority string, rest string)` — extracts `(A)` or `(B)`
+- [x] Write `extractDueDate(text string) (due time.Time, rest string, warning *Warning)` — parses `due:YYYY-MM-DD`; invalid date → non-nil warning (caller fills line number)
+- [x] Write `extractEmojis(text string) (emojis []string, rest string)` — extracts known emoji (`🏡 💰 📞 🏢`) from anywhere in text
+- [x] Write `extractWikilinks(text string) (wikilinks []string, rest string, warnings []Warning)` — extracts `[[wikilink]]`
+- [x] Write `extractInlineLinks(text string) (links []InlineLink, rest string)` — extracts `[text](url)`
+- [x] Write tests for all helper functions (table-driven)
+- [x] run tests — must pass before next task
 
 ### Task 4: Implement section and task parsing
 **Files:**
