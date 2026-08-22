@@ -142,23 +142,34 @@ func TestExtractDueDate(t *testing.T) {
 		wantDue  time.Time
 		wantRest string
 		wantWarn bool
+		wantMsg  string
 	}{
-		{"valid only", "due:2030-07-13", valid, "", false},
-		{"valid with text", "foo due:2030-07-13 bar", valid, "foo bar", false},
-		{"no due", "plain text", time.Time{}, "plain text", false},
-		{"invalid month", "due:2030-13-45", time.Time{}, "", true},
+		{"valid only", "due:2030-07-13", valid, "", false, ""},
+		{"valid with text", "foo due:2030-07-13 bar", valid, "foo bar", false, ""},
+		{"no due", "plain text", time.Time{}, "plain text", false, ""},
+		{"invalid month", "due:2030-13-45", time.Time{}, "", true, `invalid due date "due:2030-13-45"`},
+		{"no boundary false positive", "overdue:2030-07-13", time.Time{}, "overdue:2030-07-13", false, ""},
+		{"subdue false positive", "subdue:2030-07-13", time.Time{}, "subdue:2030-07-13", false, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotDue, gotRest, gotWarn := extractDueDate(tt.text)
+			gotDue, gotRest, gotWarns := extractDueDate(tt.text)
 			if !gotDue.Equal(tt.wantDue) {
 				t.Errorf("extractDueDate(%q) due = %v, want %v", tt.text, gotDue, tt.wantDue)
 			}
 			if gotRest != tt.wantRest {
 				t.Errorf("extractDueDate(%q) rest = %q, want %q", tt.text, gotRest, tt.wantRest)
 			}
-			if (gotWarn != nil) != tt.wantWarn {
-				t.Errorf("extractDueDate(%q) warn = %v, want warn=%v", tt.text, gotWarn, tt.wantWarn)
+			if (len(gotWarns) > 0) != tt.wantWarn {
+				t.Errorf("extractDueDate(%q) warns = %v, want warn=%v", tt.text, gotWarns, tt.wantWarn)
+			}
+			if tt.wantWarn {
+				if len(gotWarns) != 1 {
+					t.Fatalf("extractDueDate(%q) warns = %v, want 1", tt.text, gotWarns)
+				}
+				if gotWarns[0].Message != tt.wantMsg {
+					t.Errorf("extractDueDate(%q) warn message = %q, want %q", tt.text, gotWarns[0].Message, tt.wantMsg)
+				}
 			}
 		})
 	}
@@ -299,6 +310,45 @@ func TestParseFullFile(t *testing.T) {
 	}
 	if !summer[0].Due.Equal(mustTime(t, "2030-07-13")) {
 		t.Errorf("summer first due = %v, want 2030-07-13", summer[0].Due)
+	}
+
+	fallSection := tf.Sections[2]
+	if fallSection.Title != "fall 2030" {
+		t.Errorf("section 2 title = %q, want %q", fallSection.Title, "fall 2030")
+	}
+	fall := fallSection.Tasks
+	if len(fall) < 1 {
+		t.Fatalf("fall 2030 section has no tasks")
+	}
+	if fall[0].Text != "balance somethin" {
+		t.Errorf("fall first task text = %q, want %q", fall[0].Text, "balance somethin")
+	}
+	if !fall[0].Due.Equal(mustTime(t, "2030-10-13")) {
+		t.Errorf("fall first due = %v, want 2030-10-13", fall[0].Due)
+	}
+	if !reflect.DeepEqual(fall[0].Wikilinks, []string{"finance"}) {
+		t.Errorf("fall first wikilinks = %v, want [finance]", fall[0].Wikilinks)
+	}
+	if !reflect.DeepEqual(fall[0].Emojis, []string{"💰"}) {
+		t.Errorf("fall first emojis = %v, want [💰]", fall[0].Emojis)
+	}
+
+	winterSection := tf.Sections[3]
+	if winterSection.Title != "winter 2031" {
+		t.Errorf("section 3 title = %q, want %q", winterSection.Title, "winter 2031")
+	}
+	winter := winterSection.Tasks
+	if len(winter) < 1 {
+		t.Fatalf("winter 2031 section has no tasks")
+	}
+	if winter[0].Text != "buy medecin" {
+		t.Errorf("winter first task text = %q, want %q", winter[0].Text, "buy medecin")
+	}
+	if !winter[0].Due.Equal(mustTime(t, "2031-01-15")) {
+		t.Errorf("winter first due = %v, want 2031-01-15", winter[0].Due)
+	}
+	if !reflect.DeepEqual(winter[0].Wikilinks, []string{"Doctors"}) {
+		t.Errorf("winter first wikilinks = %v, want [Doctors]", winter[0].Wikilinks)
 	}
 }
 
@@ -471,6 +521,40 @@ func TestParseStopMarkerSilentSkip(t *testing.T) {
 	}
 }
 
+func TestParseStopMarkerNonHeader(t *testing.T) {
+	// A non-heading stop marker must silently stop parsing whether it appears
+	// inside a section body or mid-subtask-run, and remaining lines (including
+	// subtasks, tasks, and garbage) are skipped with no warnings.
+	tests := []struct {
+		name      string
+		input     string
+		wantTasks int
+		wantSubs  int
+	}{
+		{"in section body", "### Today\n- a\n- b\nSTOP\n- c\ngarbage\n", 2, 0},
+		{"in subtask run", "### Today\n- a\n\t- s1\n\t- s2\nSTOP\n\t- s3\n- b\n", 1, 2},
+		{"before any section", "- a\n- b\nSTOP\ndue:2030-13-45\n", 2, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tf := parseFile(t, tt.input, "STOP")
+			if len(tf.Warnings) != 0 {
+				t.Fatalf("got %d warnings, want 0: %+v", len(tf.Warnings), tf.Warnings)
+			}
+			if len(tf.Sections) != 1 {
+				t.Fatalf("got %d sections, want 1: %+v", len(tf.Sections), tf.Sections)
+			}
+			if len(tf.Sections[0].Tasks) != tt.wantTasks {
+				t.Fatalf("got %d tasks, want %d: %+v", len(tf.Sections[0].Tasks), tt.wantTasks, tf.Sections[0].Tasks)
+			}
+			if len(tf.Sections[0].Tasks[0].Subtasks) != tt.wantSubs {
+				t.Errorf("got %d subtasks, want %d: %+v",
+					len(tf.Sections[0].Tasks[0].Subtasks), tt.wantSubs, tf.Sections[0].Tasks[0].Subtasks)
+			}
+		})
+	}
+}
+
 func TestParseSectionHeader(t *testing.T) {
 	tf := parseFile(t, "### Today\n- a\n###  winter 2031\n- b\n", "")
 	if len(tf.Sections) != 2 {
@@ -515,7 +599,7 @@ func TestParseInlineWarningsPropagate(t *testing.T) {
 	// propagated from parseTaskLine all the way into TaskFile.Warnings, for both
 	// plain task lines and subtask lines, with correct 1-based line numbers.
 	tf := parseFile(t, "### s\n- a [[unclosed\n\t- sub bad due:2030-13-45\n- c\n", "")
-	wantTexts := []string{"- a [[unclosed", "- sub bad due:2030-13-45"}
+	wantTexts := []string{"- a [[unclosed", "\t- sub bad due:2030-13-45"}
 	if len(tf.Warnings) != len(wantTexts) {
 		t.Fatalf("warnings = %d, want %d: %+v", len(tf.Warnings), len(wantTexts), tf.Warnings)
 	}

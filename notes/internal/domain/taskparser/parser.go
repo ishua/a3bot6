@@ -68,20 +68,18 @@ func ParseTaskFile(lines []string, stopMarker string) *TaskFile {
 			title := strings.TrimSpace(strings.TrimPrefix(line, "###"))
 			tf.Sections = append(tf.Sections, Section{Title: title, Tasks: make([]TaskItem, 0)})
 			current = &tf.Sections[len(tf.Sections)-1]
-			endIdx, warns := parseTasksInSection(lines, idx+1, current)
+			endIdx, warns := parseTasksInSection(lines, idx+1, current, stopMarker)
 			tf.Warnings = append(tf.Warnings, warns...)
 			idx = endIdx
 			continue
 		}
 		if isSubtaskLine(line) {
-			if current == nil || len(current.Tasks) == 0 {
+			if current == nil {
 				tf.Warnings = append(tf.Warnings, Warning{Line: lineNum, Text: line, Message: "subtask without parent"})
 				idx++
 				continue
 			}
-			last := &current.Tasks[len(current.Tasks)-1]
-			subs, end, warns := parseSubtasks(lines, idx, idx+1)
-			last.Subtasks = append(last.Subtasks, subs...)
+			end, warns := attachSubtasksToLast(&current.Tasks, lines, idx, lineNum, stopMarker)
 			tf.Warnings = append(tf.Warnings, warns...)
 			idx = end
 			continue
@@ -109,19 +107,19 @@ func ParseTaskFile(lines []string, stopMarker string) *TaskFile {
 // wikilink) are returned with the line number filled in.
 func parseTaskLine(line string, lineNum int) (TaskItem, []Warning) {
 	warnings := make([]Warning, 0)
-	content := line
+	content := strings.TrimLeft(line, " \t")
 	if strings.HasPrefix(content, "- ") || strings.HasPrefix(content, "* ") {
 		content = content[2:]
 	}
 
 	priority, rest := extractPriority(content)
 
-	due, rest, warn := extractDueDate(rest)
-	if warn != nil {
-		warn.Line = lineNum
-		warn.Text = line
-		warnings = append(warnings, *warn)
+	due, rest, warns := extractDueDate(rest)
+	for i := range warns {
+		warns[i].Line = lineNum
+		warns[i].Text = line
 	}
+	warnings = append(warnings, warns...)
 
 	wikilinks, rest, warns := extractWikilinks(rest)
 	for i := range warns {
@@ -154,15 +152,18 @@ func indentDepth(line string) int {
 // parseSubtasks parses a run of consecutive subtask lines starting at startIdx,
 // recursing into deeper-indented descendants. It returns the collected subtasks
 // and the index of the first line after the run. lineNumBase is the 1-based line
-// number of the line at startIdx.
-func parseSubtasks(lines []string, startIdx int, lineNumBase int) (subtasks []TaskItem, endIdx int, warnings []Warning) {
+// number of the line at startIdx. Parsing silently stops at the configured
+// stopMarker or "---" separator.
+func parseSubtasks(lines []string, startIdx int, lineNumBase int, stopMarker string) (subtasks []TaskItem, endIdx int, warnings []Warning) {
 	subtasks = make([]TaskItem, 0)
 	warnings = make([]Warning, 0)
 	myDepth := indentDepth(lines[startIdx])
 	i := startIdx
-	linenum := func(k int) int { return lineNumBase + (k - startIdx) }
 	for i < len(lines) {
 		line := lines[i]
+		if isStopLine(line, stopMarker) {
+			return subtasks, i, warnings
+		}
 		if !isSubtaskLine(line) {
 			return subtasks, i, warnings
 		}
@@ -172,18 +173,18 @@ func parseSubtasks(lines []string, startIdx int, lineNumBase int) (subtasks []Ta
 			// Belongs to an outer level; back off.
 			return subtasks, i, warnings
 		case d == myDepth:
-			task, warns := parseTaskLine(strings.TrimLeft(line, " \t"), linenum(i))
+			task, warns := parseTaskLine(line, lineNumBase+(i-startIdx))
 			subtasks = append(subtasks, task)
 			warnings = append(warnings, warns...)
 			i++
 		default: // d > myDepth: child of the last sibling.
 			if len(subtasks) == 0 {
-				warnings = append(warnings, Warning{Line: linenum(i), Text: line, Message: "subtask without parent"})
+				warnings = append(warnings, Warning{Line: lineNumBase + (i - startIdx), Text: line, Message: "subtask without parent"})
 				i++
 				continue
 			}
 			last := &subtasks[len(subtasks)-1]
-			childSubs, end, warns := parseSubtasks(lines, i, linenum(i))
+			childSubs, end, warns := parseSubtasks(lines, i, lineNumBase+(i-startIdx), stopMarker)
 			last.Subtasks = append(last.Subtasks, childSubs...)
 			warnings = append(warnings, warns...)
 			i = end
@@ -192,17 +193,33 @@ func parseSubtasks(lines []string, startIdx int, lineNumBase int) (subtasks []Ta
 	return subtasks, i, warnings
 }
 
+// attachSubtasksToLast appends a run of subtask lines starting at startIdx to
+// the last task in tasks. If tasks is empty it records a "subtask without
+// parent" warning. It returns the index of the next line plus any warnings.
+func attachSubtasksToLast(tasks *[]TaskItem, lines []string, startIdx int, lineNum int, stopMarker string) (int, []Warning) {
+	warnings := make([]Warning, 0)
+	if len(*tasks) == 0 {
+		warnings = append(warnings, Warning{Line: lineNum, Text: lines[startIdx], Message: "subtask without parent"})
+		return startIdx + 1, warnings
+	}
+	last := &(*tasks)[len(*tasks)-1]
+	subs, end, warns := parseSubtasks(lines, startIdx, startIdx+1, stopMarker)
+	last.Subtasks = append(last.Subtasks, subs...)
+	warnings = append(warnings, warns...)
+	return end, warnings
+}
+
 // parseTasksInSection parses the body of a section, starting at startIdx, until
-// the next section header, the "---" stop line, or the end of input. It fills
-// section.Tasks (including subtask attachment) and returns the index of the
-// first unprocessed line plus any warnings.
-func parseTasksInSection(lines []string, startIdx int, section *Section) (endIdx int, warnings []Warning) {
+// the next section header, the configured stopMarker or "---" stop line, or the
+// end of input. It fills section.Tasks (including subtask attachment) and
+// returns the index of the first unprocessed line plus any warnings.
+func parseTasksInSection(lines []string, startIdx int, section *Section, stopMarker string) (endIdx int, warnings []Warning) {
 	warnings = make([]Warning, 0)
 	i := startIdx
 	for i < len(lines) {
 		line := lines[i]
 		lineNum := i + 1
-		if isSectionHeader(line) || line == "---" {
+		if isStopLine(line, stopMarker) || isSectionHeader(line) {
 			return i, warnings
 		}
 		if strings.TrimSpace(line) == "" {
@@ -210,14 +227,7 @@ func parseTasksInSection(lines []string, startIdx int, section *Section) (endIdx
 			continue
 		}
 		if isSubtaskLine(line) {
-			if len(section.Tasks) == 0 {
-				warnings = append(warnings, Warning{Line: lineNum, Text: line, Message: "subtask without parent"})
-				i++
-				continue
-			}
-			last := &section.Tasks[len(section.Tasks)-1]
-			subs, end, warns := parseSubtasks(lines, i, i+1)
-			last.Subtasks = append(last.Subtasks, subs...)
+			end, warns := attachSubtasksToLast(&section.Tasks, lines, i, lineNum, stopMarker)
 			warnings = append(warnings, warns...)
 			i = end
 			continue
@@ -278,25 +288,26 @@ func extractPriority(line string) (priority string, rest string) {
 	return "", line
 }
 
-var dueDateRe = regexp.MustCompile(`due:(\S+)`)
+var dueDateRe = regexp.MustCompile(`\bdue:(\S+)`)
 
 // extractDueDate parses a "due:YYYY-MM-DD" token out of text. On a valid date
 // it returns the parsed time and the text minus the token. On a malformed date
 // it returns a non-nil warning; the caller is responsible for filling in the
 // line number.
-func extractDueDate(text string) (due time.Time, rest string, warning *Warning) {
+func extractDueDate(text string) (due time.Time, rest string, warnings []Warning) {
+	warnings = make([]Warning, 0)
 	loc := dueDateRe.FindStringSubmatchIndex(text)
 	if loc == nil {
-		return time.Time{}, text, nil
+		return time.Time{}, text, warnings
 	}
 	token := text[loc[0]:loc[1]]
 	value := text[loc[2]:loc[3]]
 	rest = clean(text[:loc[0]] + text[loc[1]:])
 	dueParsed, err := time.Parse("2006-01-02", value)
 	if err != nil {
-		return time.Time{}, rest, &Warning{Message: fmt.Sprintf("invalid due date %q", token)}
+		return time.Time{}, rest, []Warning{{Message: fmt.Sprintf("invalid due date %q", token)}}
 	}
-	return dueParsed, rest, nil
+	return dueParsed, rest, warnings
 }
 
 // extractEmojis pulls out any known emoji characters (🏡 💰 📞 🏢) found anywhere
