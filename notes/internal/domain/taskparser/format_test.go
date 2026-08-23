@@ -5,6 +5,9 @@ import (
 	"testing"
 )
 
+// telegramMsgLimit is Telegram's per-message character limit.
+const telegramMsgLimit = 4096
+
 func TestFormatTasks_Empty(t *testing.T) {
 	got := FormatTasks([]TaskItem{}, 100)
 	if len(got) != 0 {
@@ -116,19 +119,17 @@ func TestFormatTasks_NestedSubtasks(t *testing.T) {
 }
 
 func TestFormatTasks_AllFields(t *testing.T) {
-	item := (TaskItem{
+	item := TaskItem{
 		Priority:  "A",
 		Text:      "prepare report",
 		Wikilinks: []string{"meeting"},
 		InlineLinks: []InlineLink{
 			{Text: "docs", URL: "https://example.com/report"},
 		},
-		Emojis: []string{"💰"},
-		Subtasks: []TaskItem{
-			mkItem("draft"),
-			mkItem("review"),
-		},
-	}).withDue(2030, 7, 6)
+		Emojis:   []string{"💰"},
+		Subtasks: []TaskItem{mkItem("draft"), mkItem("review")},
+	}
+	item = item.withDue(2030, 7, 6)
 
 	got := FormatTasks([]TaskItem{item}, 100)
 	want := []string{"(A) prepare report [[meeting]] [docs](https://example.com/report) due:2030-07-06 💰\n\tdraft\n\treview"}
@@ -159,8 +160,8 @@ func TestFormatTasks_LimitSingleTaskSubtasksExceed(t *testing.T) {
 }
 
 func TestFormatTasks_LimitExact(t *testing.T) {
-	// "aaaa\nbbbb" is exactly 9 bytes, equal to the boundary, so it stays in
-	// one part.
+	// "aaaa\nbbbb" is exactly 9 characters (runes), equal to the boundary, so
+	// it stays in one part.
 	got := FormatTasks([]TaskItem{mkItem("aaaa"), mkItem("bbbb")}, 9)
 	want := []string{"aaaa\nbbbb"}
 	assertParts(t, got, want)
@@ -226,7 +227,7 @@ func TestFormatTasks_Integration(t *testing.T) {
 		items = append(items, s.Tasks...)
 	}
 
-	parts := FormatTasks(items, 4096)
+	parts := FormatTasks(items, telegramMsgLimit)
 	joined := strings.Join(parts, "\n")
 
 	for _, want := range []string{"[[link car]]", "due:2030-07-06", "🏡", "\t"} {

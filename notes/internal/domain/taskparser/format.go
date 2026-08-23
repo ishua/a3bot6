@@ -6,6 +6,14 @@ import (
 	"unicode/utf8"
 )
 
+const (
+	// subtaskIndent prefixes each subtask line, one tab per nesting level.
+	subtaskIndent = "\t"
+
+	// warningFormat renders a single warning line.
+	warningFormat = "line %d: %s | %s"
+)
+
 // formatTask renders a single task (and, recursively, its subtasks) back to
 // human-readable text. It restores the attributes the parser extracted out of
 // the raw text: priority, wikilinks, inline links, due date and emojis.
@@ -54,7 +62,7 @@ func formatTask(item TaskItem) string {
 			if l == "" {
 				continue
 			}
-			lines = append(lines, "\t"+l)
+			lines = append(lines, subtaskIndent+l)
 		}
 	}
 	return strings.Join(lines, "\n")
@@ -71,21 +79,15 @@ func splitByLimit(lines []string, limit int) []string {
 		return []string{}
 	}
 	var result []string
-	current := ""
-	var hasContent bool
-	for _, line := range lines {
+	current := lines[0]
+	for _, line := range lines[1:] {
 		candidate := current + "\n" + line
-		if hasContent && limit > 0 && utf8.RuneCountInString(candidate) > limit {
+		if limit > 0 && utf8.RuneCountInString(candidate) > limit {
 			result = append(result, current)
 			current = line
 			continue
 		}
-		if !hasContent {
-			current = line
-			hasContent = true
-		} else {
-			current = candidate
-		}
+		current = candidate
 	}
 	result = append(result, current)
 	return result
@@ -114,7 +116,7 @@ func FormatTasks(items []TaskItem, limit int) []string {
 func FormatWarnings(warnings []Warning, limit int) []string {
 	lines := make([]string, 0, len(warnings))
 	for _, w := range warnings {
-		lines = append(lines, fmt.Sprintf("line %d: %s | %s", w.Line, w.Message, w.Text))
+		lines = append(lines, fmt.Sprintf(warningFormat, w.Line, w.Message, w.Text))
 	}
 	return splitByLimit(lines, limit)
 }
