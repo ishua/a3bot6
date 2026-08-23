@@ -31,8 +31,8 @@
 
 **Создать:** `notes/internal/domain/taskparser/format.go`
 
-- [ ] Определить константу `dateLayout = "2006-01-02"` для форматирования due date
-- [ ] Реализовать `formatTask(item TaskItem) string`:
+- [x] Использовать существующую константу `dateLayout` из `parser.go` (не переопределять!)
+- [x] Реализовать `formatTask(item TaskItem) string`:
   - Порядок: приоритет → текст → wikilinks → inline links → due → эмодзи
   - Приоритет: `(A) ` или `(B) ` если есть
   - Текст: `item.Text` (уже очищен от wikilinks, inline links, эмодзи)
@@ -40,16 +40,17 @@
   - Inline links: `[text](url)` (в порядке извлечения)
   - Due: `due:YYYY-MM-DD` если `!Due.IsZero()`
   - Эмодзи: конкатенация `Emojis` в порядке извлечения
-  - Подзадачи: каждая с префиксом `\t` + рекурсивный вызов `formatTask`
-- [ ] Реализовать `FormatTasks(items []TaskItem, limit int) []string`:
+  - Подзадачи: каждая строка из рекурсивного вывода `formatTask(subtask)` получает префикс `\t` (т.е. отступ применяется ко **всем** строкам подзадачи, включая её собственные подзадачи — `\t\t` для уровня 2 и т.д.)
+- [x] Реализовать `FormatTasks(items []TaskItem, limit int) []string`:
+  - `limit <= 0` → нет лимита, весь вывод одной частью
   - Накапливать строки в текущую часть
   - Перед добавлением новой задачи проверять: `currentPart + "\n" + newLine` превышает `limit`?
     - Если да: закрыть текущую часть, начать новую
   - Если одна задача (со всеми подзадачами) превышает `limit` — всё равно добавить как есть (Telegram обрежет)
   - Возвращать `[]string{}` (не nil) для пустого входа
-- [ ] Реализовать `FormatWarnings(warnings []Warning) []string`:
+- [x] Реализовать `FormatWarnings(warnings []Warning) []string`:
   - Формат: `line N: <message> | <text>`
-  - Разбивка по `limit` по границам warning
+  - Разбивка по `limit` по границам warning (поведение как в `FormatTasks`: `limit <= 0` → без лимита; одно предупреждение длиннее `limit` → всё равно одной частью)
   - Возвращать `[]string{}` для пустого входа
 
 ### Задача 2: Написать тесты `format_test.go`
@@ -57,8 +58,9 @@
 **Создать:** `notes/internal/domain/taskparser/format_test.go`
 
 - [ ] Импортировать `testing`, `time`, `strings`
-- [ ] Использовать `mkItem` и `withDue` из `filter_test.go`
+- [ ] Использовать `mkItem` и `withDue` из `filter_test.go` где удобно; для тестов с приоритетом/эмодзи/wikilinks/inline links — использовать `TaskItem{...}` литералы напрямую (т.к. `mkItem` не покрывает эти поля)
 - [ ] `TestFormatTasks_Empty` — пустой вход возвращает `[]string{}`
+- [ ] `TestFormatTasks_NilInput` — `nil` вход возвращает `[]string{}` (non-nil)
 - [ ] `TestFormatTasks_SingleTask` — одна задача с текстом
 - [ ] `TestFormatTasks_Priority` — `(A)` / `(B)` в начале
 - [ ] `TestFormatTasks_DueDate` — `due:YYYY-MM-DD` если задана
@@ -66,23 +68,30 @@
 - [ ] `TestFormatTasks_Emojis` — эмодзи в конце
 - [ ] `TestFormatTasks_Wikilinks` — `[[link]]` восстановлены
 - [ ] `TestFormatTasks_InlineLinks` — `[text](url)` восстановлены
+- [ ] `TestFormatTasks_EmptyTextWithAttributes` — задача с пустым `Text` но с wikilinks/emojis: нет лишних пробелов
 - [ ] `TestFormatTasks_Subtasks` — подзадачи с `\t` отступом, рекурсивно
+- [ ] `TestFormatTasks_NestedSubtasks` — 3 уровня вложенности: `\t`, `\t\t` отступы
 - [ ] `TestFormatTasks_AllFields` — все поля: приоритет, текст, wikilinks, inline links, due, эмодзи, подзадачи
 - [ ] `TestFormatTasks_LimitSplit` — несколько задач разбиваются по лимиту
 - [ ] `TestFormatTasks_LimitSingleTaskExceeds` — задача длиннее лимита всё равно в одном part
 - [ ] `TestFormatTasks_LimitExact` — часть точно по границе лимита
+- [ ] `TestFormatTasks_ZeroLimit` — `limit = 0` → весь вывод одной частью
+- [ ] `TestFormatTasks_NegativeLimit` — `limit = -1` → весь вывод одной частью
 - [ ] `TestFormatWarnings_Empty` — пустой вход возвращает `[]string{}`
+- [ ] `TestFormatWarnings_NilInput` — `nil` вход возвращает `[]string{}` (non-nil)
 - [ ] `TestFormatWarnings_Formatted` — `line N: message | text`
 - [ ] `TestFormatWarnings_LimitSplit` — warnings разбиваются по лимиту
-- [ ] `TestFormatTasks_Integration` — использовать `loadTestTaskFile(t)`, форматнуть с большим лимитом, проверить наличие ожидаемых задач
+- [ ] `TestFormatWarnings_LimitSingleWarningExceeds` — одно предупреждение длиннее лимита → одной частью
+- [ ] `TestFormatTasks_Integration` — использовать `loadTestTaskFile(t)`, форматнуть с большим лимитом, проверить наличие конкретных подстрок: `[[link car]]`, `due:2030-07-06`, `🏡`, `\t`-отступ для подзадач. Inline links и приоритеты в testdata отсутствуют — покрываются только unit-тестами
 
 ### Задача 3: Верификация
 
 - [ ] Запустить `go test ./internal/domain/taskparser/...` — все тесты проходят
-- [ ] Проверить edge cases: пустой слайс, nil-slice, одна задача длиннее лимита
+- [ ] Проверить edge cases: пустой слайс, nil-slice, одна задача длиннее лимита, limit <= 0, пустой Text с атрибутами
 
 ## Решения и договорённости
 
+- **Порядок полей переопределяет оригинальный план**: оригинальный план (Phase 3, строка 73) указывал «приоритет, текст, эмодзи, due-дата, wikilink как есть». Phase 3 фиксирует другой порядок: приоритет → текст → wikilinks → inline links → due → эмодзи. Это намеренно — wikilinks и inline links логически сгруппированы после текста, эмодзи завершают строку
 - **Восстановление извлечённых атрибутов**: парсер разбирает задачу на поля, форматирование собирает обратно в читаемый текст
 - **Wikilinks первыми**: `[[wikilink]]` идут перед inline links `[text](url)` и перед due/emojis
 - **Due формат**: только `due:YYYY-MM-DD`, без времени. Пустая due — токен отсутствует
