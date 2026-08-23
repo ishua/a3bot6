@@ -23,6 +23,7 @@ const tnHelpText = `This is help for /note commands:
 - /note inbox add - add text to inbox. Synonyms: ni/Ni
 - /note inbox read - read inbox. Synonyms: nir/Nir
 - /note pull - just update repo
+- /note task [list|due|today|due today|warn] - list tasks (without arg - default: today). Synonyms: nt/Nt
 `
 
 const helpCommon = ` My commands:
@@ -69,7 +70,8 @@ func (m *Mng) createReply(dialogId int64, userName string, userText string, file
 		return m.createYtdlTask(dialogId, userName, userText)
 	case "/torrent", "torrent", "t", "T":
 		return m.createTrTask(dialogId, userText, fileUrl)
-	case "/note", "n", "nd", "Nd", "n5", "N5", "ni", "Ni", "nir", "Nir", "nw", "Nw", "nbp", "Nbp":
+	case "/note", "n", "nd", "Nd", "n5", "N5", "ni", "Ni", "nir", "Nir",
+		"nw", "Nw", "nbp", "Nbp", "nt", "Nt":
 		return m.createNoteTask(dialogId, userText)
 	case "health", "/health":
 		return m.createHealth(dialogId)
