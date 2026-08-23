@@ -344,6 +344,129 @@ func TestFilterDueToday_Stable(t *testing.T) {
 	}
 }
 
+// TestFilterDueToday_NonUTCOffset verifies "due today" works when the caller's
+// local timezone has a non-zero UTC offset. Due dates are parsed by the parser
+// with a UTC location (time.Parse default), while now/start-of-day are in the
+// local zone; the comparison must happen on the same calendar day, otherwise
+// today's tasks would be spuriously excluded.
+func TestFilterDueToday_NonUTCOffset(t *testing.T) {
+	fixedZone := time.FixedZone("UTC+3", 3*3600)
+	now := time.Date(2030, 7, 14, 10, 0, 0, 0, fixedZone)
+	tf := &TaskFile{Sections: []Section{{
+		Title: "summer 2030",
+		Tasks: []TaskItem{
+			mkItem("due today").withDue(2030, 7, 14),
+			mkItem("overdue").withDue(2030, 7, 13),
+			mkItem("future").withDue(2030, 7, 15),
+		},
+	}}}
+
+	got := FilterDueToday(tf, now)
+	want := []string{"overdue", "due today"}
+	if len(got) != len(want) {
+		t.Fatalf("FilterDueToday() returned %d tasks, want %d: %v", len(got), len(want), textOrder(got))
+	}
+	for i, w := range want {
+		if got[i].Text != w {
+			t.Errorf("FilterDueToday()[%d].Text = %q, want %q", i, got[i].Text, w)
+		}
+	}
+}
+
+// TestFilterToday_NonUTCOffset is the FilterToday counterpart: a task due today
+// in a non-Today section must be returned even when the local zone has a
+// non-zero UTC offset.
+func TestFilterToday_NonUTCOffset(t *testing.T) {
+	fixedZone := time.FixedZone("UTC+3", 3*3600)
+	now := time.Date(2030, 7, 14, 10, 0, 0, 0, fixedZone)
+	tf := &TaskFile{Sections: []Section{{
+		Title: "summer 2030",
+		Tasks: []TaskItem{mkItem("due today other section").withDue(2030, 7, 14)},
+	}}}
+
+	got := FilterToday(tf, now)
+	if len(got) != 1 {
+		t.Fatalf("FilterToday() returned %d tasks, want 1: %v", len(got), textOrder(got))
+	}
+	if got[0].Text != "due today other section" {
+		t.Errorf("FilterToday()[0].Text = %q, want %q", got[0].Text, "due today other section")
+	}
+}
+
+// TestFilterDueToday_NegativeOffset verifies "due today" for negative
+// (west-of-UTC) offsets, e.g. UTC-5 and the extreme UTC-12. Due carries a
+// calendar date parsed in UTC; reinterpreting that instant through .In(zone)
+// would shift the day backward and wrongly include a task due *tomorrow* as
+// due today/overdue. The comparison must happen on the same calendar day.
+func TestFilterDueToday_NegativeOffset(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		fixed    int // seconds east of UTC
+		expected []string
+	}{
+		{name: "UTC-5", fixed: -5 * 3600, expected: []string{"overdue", "due today"}},
+		{name: "UTC-12", fixed: -12 * 3600, expected: []string{"overdue", "due today"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			zone := time.FixedZone(tt.name, tt.fixed)
+			now := time.Date(2030, 7, 14, 10, 0, 0, 0, zone)
+			tf := &TaskFile{Sections: []Section{{
+				Title: "summer 2030",
+				Tasks: []TaskItem{
+					mkItem("due today").withDue(2030, 7, 14),
+					mkItem("overdue").withDue(2030, 7, 13),
+					mkItem("due tomorrow").withDue(2030, 7, 15),
+				},
+			}}}
+
+			got := FilterDueToday(tf, now)
+			if len(got) != len(tt.expected) {
+				t.Fatalf("FilterDueToday() returned %d tasks, want %d: %v", len(got), len(tt.expected), textOrder(got))
+			}
+			for i, w := range tt.expected {
+				if got[i].Text != w {
+					t.Errorf("FilterDueToday()[%d].Text = %q, want %q", i, got[i].Text, w)
+				}
+			}
+		})
+	}
+}
+
+// TestFilterToday_NegativeOffset is the FilterToday counterpart: in a negative
+// offset a task due tomorrow must not leak into today's list.
+func TestFilterToday_NegativeOffset(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		fixed    int // seconds east of UTC
+		expected []string
+	}{
+		{name: "UTC-5", fixed: -5 * 3600, expected: []string{"due today other section"}},
+		{name: "UTC-12", fixed: -12 * 3600, expected: []string{"due today other section"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			zone := time.FixedZone(tt.name, tt.fixed)
+			now := time.Date(2030, 7, 14, 10, 0, 0, 0, zone)
+			tf := &TaskFile{Sections: []Section{{
+				Title: "summer 2030",
+				Tasks: []TaskItem{
+					mkItem("due today other section").withDue(2030, 7, 14),
+					mkItem("due tomorrow other section").withDue(2030, 7, 15),
+				},
+			}}}
+
+			got := FilterToday(tf, now)
+			if len(got) != len(tt.expected) {
+				t.Fatalf("FilterToday() returned %d tasks, want %d: %v", len(got), len(tt.expected), textOrder(got))
+			}
+			for i, w := range tt.expected {
+				if got[i].Text != w {
+					t.Errorf("FilterToday()[%d].Text = %q, want %q", i, got[i].Text, w)
+				}
+			}
+		})
+	}
+}
+
 // TestSubtasksNotFilteredIndependently verifies that subtasks are never
 // flattened nor returned as independent top-level entries by any filter, even
 // when a subtask carries a due date. The parent task qualifies (it has its own

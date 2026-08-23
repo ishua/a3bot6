@@ -18,14 +18,14 @@
 
 ## Фаза 4: Поддержка /note task в notes (DoTask)
 
-- [ ] В `mcore/pkg/schema/task.go`:
+- [x] В `mcore/pkg/schema/task.go`:
   - Добавить константу: `TaskNoteCmdTaskList TaskNoteCmd = "taskList"` в блок const после `TaskNoteCmdAddBP`
-- [ ] В `notes/cmd/app/main.go`:
+- [x] В `notes/cmd/app/main.go`:
   - Добавить поле `TaskFilePath string` в `MyConfig` (default `"My Long Tasks List.md"`, usage `"path to task list markdown file relative to repo"`)
   - Добавить поле `TaskStopMarker string` (default `"### Long"`, usage `"stop marker line in task file"`)
   - Добавить поле `TaskDefaultBehavior string` (default `"today"`, usage `"default filter: list|due|today"`)
   - В `model := domain.NewModel(gc)` добавить передачу трёх новых полей: `domain.NewModel(gc, cfg.TaskFilePath, cfg.TaskStopMarker, cfg.TaskDefaultBehavior)`
-- [ ] В `notes/internal/domain/model.go`:
+- [x] В `notes/internal/domain/model.go`:
   - В `Model` добавить три поля: `taskFilePath string`, `taskStopMarker string`, `taskDefaultBehavior string`
   - Изменить `NewModel(gitClient *gitapi.GitClient, taskFilePath, taskStopMarker, taskDefaultBehavior string) *Model` — заполнить новые поля
   - Добавить import `"github.com/ishua/a3bot6/notes/internal/domain/taskparser"`
@@ -46,13 +46,13 @@
     - Для остальных — `taskparser.FormatTasks(items, 4096)`, склеить части через `\n\n---\n\n` в один `TextMsg`
     - Если результат пустой: для задач — `TextMsg = "no tasks found"`, для warn — `TextMsg = "no warnings found"`, `Status = Done`
     - Вернуть `TaskStatusDone` с `TextMsg`
-- [ ] Обновить `notes/conf/notes_config.yaml`:
+- [x] Обновить `notes/conf/notes_config.yaml`:
   - Добавить `task_file_path: "My Long Tasks List.md"`
   - Добавить `task_stop_marker: "### Long"`
   - Добавить `task_default_behavior: "today"`
-- [ ] Собрать notes: `cd notes && go build -o build/notes ./cmd/app`
-- [ ] Прогнать существующие тесты taskparser: `cd notes && go test ./internal/domain/taskparser/...`
-- [ ] Проверить, что код компилируется без ошибок
+- [x] Собрать notes: `cd notes && go build -o build/notes ./cmd/app`
+- [x] Прогнать существующие тесты taskparser: `cd notes && go test ./internal/domain/taskparser/...`
+- [x] Проверить, что код компилируется без ошибок
 
 ## Решения и договорённости
 

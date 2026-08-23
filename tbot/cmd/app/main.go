@@ -98,16 +98,18 @@ func (tg *tgClient) DoTask(task schema.Task) schema.ReportTaskReq {
 			TextMsg: "text in taskType Msg is 0",
 		}
 	}
-	msg := tgbotapi.NewMessage(task.TaskData.Msg.ChatId, task.TaskData.Msg.Text)
-	msg.ParseMode = "html"
-	msg.ReplyToMessageID = task.TaskData.Msg.ReplyMessageId
+	for _, part := range splitMessage(task.TaskData.Msg.Text) {
+		msg := tgbotapi.NewMessage(task.TaskData.Msg.ChatId, part)
+		msg.ParseMode = "html"
+		msg.ReplyToMessageID = task.TaskData.Msg.ReplyMessageId
 
-	_, err := tg.bot.Send(msg)
-	if err != nil {
-		return schema.ReportTaskReq{
-			TaskId:  task.Id,
-			Status:  schema.TaskStatusError,
-			TextMsg: fmt.Sprintf("tg sending failed: %s", err.Error()),
+		_, err := tg.bot.Send(msg)
+		if err != nil {
+			return schema.ReportTaskReq{
+				TaskId:  task.Id,
+				Status:  schema.TaskStatusError,
+				TextMsg: fmt.Sprintf("tg sending failed: %s", err.Error()),
+			}
 		}
 	}
 	return schema.ReportTaskReq{
@@ -115,6 +117,26 @@ func (tg *tgClient) DoTask(task schema.Task) schema.ReportTaskReq {
 		Status:  schema.TaskStatusDone,
 		TextMsg: "message sent",
 	}
+}
+
+const maxMsgLen = 4096
+
+// splitMessage splits text into parts no longer than the Telegram message
+// limit (4096 chars) so a single response never hits "message is too long".
+func splitMessage(text string) []string {
+	runes := []rune(text)
+	if len(runes) <= maxMsgLen {
+		return []string{text}
+	}
+	var parts []string
+	for len(runes) > maxMsgLen {
+		parts = append(parts, string(runes[:maxMsgLen]))
+		runes = runes[maxMsgLen:]
+	}
+	if len(runes) > 0 {
+		parts = append(parts, string(runes))
+	}
+	return parts
 }
 
 func (tg *tgClient) ListeningTg(ctx context.Context) {

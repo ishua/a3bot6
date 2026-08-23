@@ -44,15 +44,28 @@ func sortByDue(tasks []TaskItem) {
 	})
 }
 
-// startOfDay truncates t to the start of its day (midnight UTC).
+// startOfDay truncates t to the start of its day in t's own location (local
+// midnight), rather than UTC midnight, so "today"/"due today" roll over at the
+// local day boundary.
 func startOfDay(t time.Time) time.Time {
-	return t.Truncate(24 * time.Hour)
+	y, m, d := t.Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, t.Location())
 }
 
 // dueOnOrBefore reports whether task carries a non-zero Due on or before day
-// (i.e. due today or overdue).
+// (i.e. due today or overdue). Due is parsed with a UTC location and only
+// carries a calendar date, so its year/month/day describe the same calendar day
+// in every zone. We rebuild that day's start in day's location instead of
+// converting the UTC instant through .In(zone): reinterpreting the instant
+// would, for negative (west-of-UTC) offsets, shift the calendar day backward
+// and wrongly treat a task due tomorrow as due today/overdue.
 func dueOnOrBefore(task TaskItem, day time.Time) bool {
-	return !task.Due.IsZero() && !task.Due.After(day)
+	if task.Due.IsZero() {
+		return false
+	}
+	y, m, d := task.Due.Date()
+	dueDay := time.Date(y, m, d, 0, 0, 0, 0, day.Location())
+	return !dueDay.After(day)
 }
 
 // collectDue returns the top-level tasks from all sections, skipping the

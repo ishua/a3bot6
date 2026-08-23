@@ -5,19 +5,30 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ishua/a3bot6/mcore/pkg/logger"
 	"github.com/ishua/a3bot6/mcore/pkg/schema"
 	"github.com/ishua/a3bot6/notes/internal/clients/gitapi"
+	"github.com/ishua/a3bot6/notes/internal/domain/taskparser"
 )
 
 const (
-	inboxPath = "main.markdown"
+	inboxPath       = "main.markdown"
+	maxMsgPartSize  = 4096
+	listFilter      = "list"
+	dueFilter       = "due"
+	todayFilter     = "today"
+	dueTodayFilter  = "due today"
+	warnFilter      = "warn"
 )
 
 type Model struct {
-	gitClient gitClient
+	gitClient           gitClient
+	taskFilePath        string
+	taskStopMarker      string
+	taskDefaultBehavior string
 }
 
 type gitClient interface {
@@ -26,9 +37,12 @@ type gitClient interface {
 	CommitAndPush(path []string) error
 }
 
-func NewModel(gitClient *gitapi.GitClient) *Model {
+func NewModel(gitClient *gitapi.GitClient, taskFilePath, taskStopMarker, taskDefaultBehavior string) *Model {
 	return &Model{
-		gitClient,
+		gitClient:           gitClient,
+		taskFilePath:        taskFilePath,
+		taskStopMarker:      taskStopMarker,
+		taskDefaultBehavior: taskDefaultBehavior,
 	}
 }
 
@@ -68,6 +82,8 @@ func (m *Model) DoTask(task schema.Task) schema.ReportTaskReq {
 		return m.addWeight(task)
 	case schema.TaskNoteCmdAddBP:
 		return m.addBloodPressure(task)
+	case schema.TaskNoteCmdTaskList:
+		return m.taskList(task)
 	}
 	return schema.ReportTaskReq{
 		TaskId:  task.Id,
@@ -316,6 +332,62 @@ func (m *Model) addBloodPressure(task schema.Task) schema.ReportTaskReq {
 		TaskId:  task.Id,
 		Status:  schema.TaskStatusDone,
 		TextMsg: "bp added",
+	}
+}
+
+func (m *Model) taskList(task schema.Task) schema.ReportTaskReq {
+	lines, err := m.readFile(m.taskFilePath)
+	if err != nil {
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: fmt.Sprintf("read task file: %v", err),
+		}
+	}
+
+	tf := taskparser.ParseTaskFile(lines, m.taskStopMarker)
+
+	behavior := task.TaskData.Tn.AddText
+	if behavior == "" {
+		behavior = m.taskDefaultBehavior
+	}
+
+	hasWarnings := false
+	var parts []string
+	now := time.Now()
+	switch behavior {
+	case listFilter:
+		parts = taskparser.FormatTasks(taskparser.FilterAll(tf), maxMsgPartSize)
+	case dueFilter:
+		parts = taskparser.FormatTasks(taskparser.FilterDue(tf), maxMsgPartSize)
+	case todayFilter:
+		parts = taskparser.FormatTasks(taskparser.FilterToday(tf, now), maxMsgPartSize)
+	case dueTodayFilter:
+		parts = taskparser.FormatTasks(taskparser.FilterDueToday(tf, now), maxMsgPartSize)
+	case warnFilter:
+		hasWarnings = true
+		parts = taskparser.FormatWarnings(tf.Warnings, maxMsgPartSize)
+	default:
+		return schema.ReportTaskReq{
+			TaskId:  task.Id,
+			Status:  schema.TaskStatusError,
+			TextMsg: fmt.Sprintf("unknown task filter: %s", behavior),
+		}
+	}
+
+	textMsg := strings.Join(parts, "\n\n---\n\n")
+	if textMsg == "" {
+		if hasWarnings {
+			textMsg = "no warnings found"
+		} else {
+			textMsg = "no tasks found"
+		}
+	}
+
+	return schema.ReportTaskReq{
+		TaskId:  task.Id,
+		Status:  schema.TaskStatusDone,
+		TextMsg: textMsg,
 	}
 }
 

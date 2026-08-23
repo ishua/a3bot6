@@ -19,13 +19,16 @@ import (
 )
 
 type MyConfig struct {
-	GitPath        string `default:"data/fsnotes" usage:" path to repository fsnotes"`
-	GitUrl         string `required:"true" usage:"url for repository"`
-	GitAccessToken string `env:"REPOACCESSTOKEN" required:"true"`
-	GitEmail       string `required:"true" usage:"email for repo commits"`
-	MCoreAddr      string `default:"http://127.0.0.1:8080" usage:"host and port for mcore"`
-	MCoreSecret    string `required:"true" usage:"secret key for api"`
-	Debug          bool   `default:"false" usage:"turn on debug mode"`
+	GitPath             string `default:"data/fsnotes" usage:" path to repository fsnotes"`
+	GitUrl              string `required:"true" usage:"url for repository"`
+	GitAccessToken      string `env:"REPOACCESSTOKEN" required:"true"`
+	GitEmail            string `required:"true" usage:"email for repo commits"`
+	MCoreAddr           string `default:"http://127.0.0.1:8080" usage:"host and port for mcore"`
+	MCoreSecret         string `required:"true" usage:"secret key for api"`
+	Debug               bool   `default:"false" usage:"turn on debug mode"`
+	TaskFilePath        string `default:"My Long Tasks List.md" usage:"path to task list markdown file relative to repo"`
+	TaskStopMarker      string `default:"### Long" usage:"stop marker line in task file"`
+	TaskDefaultBehavior string `default:"today" usage:"default filter: list|due|today"`
 }
 
 var (
@@ -57,7 +60,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	model := domain.NewModel(gc)
+	model := domain.NewModel(gc, cfg.TaskFilePath, cfg.TaskStopMarker, cfg.TaskDefaultBehavior)
 
 	mcore := mcoreclient.NewClient(cfg.MCoreAddr, cfg.MCoreSecret)
 	ctx, cancel := context.WithCancel(context.Background())

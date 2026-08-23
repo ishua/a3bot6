@@ -77,6 +77,8 @@ const (
 	TaskNoteReadInbox    TaskNoteCmd = "readInbox"
 	TaskNoteCmdAddWeight TaskNoteCmd = "addWeight"
 	TaskNoteCmdAddBP     TaskNoteCmd = "addBP"
+	// TaskNoteCmdTaskList lists tasks from the task file filtered by AddText.
+	TaskNoteCmdTaskList TaskNoteCmd = "taskList"
 )
 
 type TaskNote struct {

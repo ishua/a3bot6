@@ -4,3 +4,9 @@ git_email: "some@some.some"
 m_core_addr: "http://mcore:8080"
 m_core_secret: "test"
 debug: true
+# Path to the task-list markdown file, relative to the repo.
+task_file_path: "My Long Tasks List.md"
+# Line that stops task parsing; everything after it (e.g. a Long Tasks section) is ignored.
+task_stop_marker: "### Long"
+# Filter applied when the /note task request has no argument: list|due|today.
+task_default_behavior: "today"
