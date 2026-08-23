@@ -48,7 +48,7 @@
     - Если да: закрыть текущую часть, начать новую
   - Если одна задача (со всеми подзадачами) превышает `limit` — всё равно добавить как есть (Telegram обрежет)
   - Возвращать `[]string{}` (не nil) для пустого входа
-- [x] Реализовать `FormatWarnings(warnings []Warning) []string`:
+- [x] Реализовать `FormatWarnings(warnings []Warning, limit int) []string`:
   - Формат: `line N: <message> | <text>`
   - Разбивка по `limit` по границам warning (поведение как в `FormatTasks`: `limit <= 0` → без лимита; одно предупреждение длиннее `limit` → всё равно одной частью)
   - Возвращать `[]string{}` для пустого входа
@@ -99,5 +99,8 @@
 - **Разбивка по границам задач**: никогда не разрезать задачу/подзадачу посередине; oversized задача → oversized part (Telegram обрежет)
 - **Возврат**: всегда `[]string{}` (non-nil empty slice), никогда `nil`
 - **Subtask indent**: один tab `\t` на уровень вложенности
-- **Warning формат**: `line N: <message> | <text>` — через `|` визуально отделяет описание от оригинальной строки[2026-08-23 14:23:47] [decision] task 2: kept TestFormatTasks_ZeroLimit and TestFormatTasks_NegativeLimit asserting plan's documented limit<=0 -> single-part behavior; they expose a hook bug in format.go, so they were NOT weakened
+- **Warning формат**: `line N: <message> | <text>` — через `|` визуально отделяет описание от оригинальной строки
+- **`FormatWarnings` сигнатура**: спецификация в фазе 3 (задача 1) документально описывала `FormatWarnings(warnings []Warning) []string` без параметра `limit`, однако реализация принимает `limit int` (разбивка по лимиту — общее поведение с `FormatTasks`). Документация обновлена, чтобы соответствовать реализации: `FormatWarnings(warnings []Warning, limit int) []string`
+- **Лимит считается в символах (runes)**: лимит соответствует Telegram-ограничению 4096 символов. `len()` считает байты (кириллица — 2 байта, эмодзи — 4), поэтому разбивка использует `utf8.RuneCountInString`
+- **Пустая подзадача**: пустая подзадача (все поля пустые) не выводится — строка с одним `\t`-отступом пропускается[2026-08-23 14:23:47] [decision] task 2: kept TestFormatTasks_ZeroLimit and TestFormatTasks_NegativeLimit asserting plan's documented limit<=0 -> single-part behavior; they expose a hook bug in format.go, so they were NOT weakened
 [2026-08-23 14:23:47] [deviation] task 2: go test for the package is NOT fully green — TestFormatTasks_ZeroLimit and TestFormatTasks_NegativeLimit FAIL because format.go does not implement the documented limit<=0 guard (missing `if limit > 0` before the split check). Task instructions prohibit editing format.go; reported bug for orchestrator to fix

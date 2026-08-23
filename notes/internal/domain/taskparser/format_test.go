@@ -91,6 +91,14 @@ func TestFormatTasks_EmptyTextWithAttributes(t *testing.T) {
 	assertParts(t, got, want)
 }
 
+func TestFormatTasks_EmptyTextWithPriorityAndInlineLink(t *testing.T) {
+	got := FormatTasks([]TaskItem{
+		{Priority: "A", InlineLinks: []InlineLink{{Text: "docs", URL: "https://example.com/docs"}}},
+	}, 100)
+	want := []string{"(A) [docs](https://example.com/docs)"}
+	assertParts(t, got, want)
+}
+
 func TestFormatTasks_Subtasks(t *testing.T) {
 	got := FormatTasks([]TaskItem{
 		mkItem("parent", mkItem("child1"), mkItem("child2")),
@@ -137,6 +145,16 @@ func TestFormatTasks_LimitSingleTaskExceeds(t *testing.T) {
 	text := "much longer than the limit"
 	got := FormatTasks([]TaskItem{mkItem(text)}, 5)
 	want := []string{text}
+	assertParts(t, got, want)
+}
+
+func TestFormatTasks_LimitSingleTaskSubtasksExceed(t *testing.T) {
+	parent := "a fairly long parent line that itself exceeds the small limit"
+	child := "a long nested subtask line that pushes the multi-line render over the limit"
+	task := mkItem(parent, mkItem(child))
+	got := FormatTasks([]TaskItem{task}, 10)
+	// A single task, even with multi-line nested subtasks, is never split.
+	want := []string{parent + "\n\t" + child}
 	assertParts(t, got, want)
 }
 

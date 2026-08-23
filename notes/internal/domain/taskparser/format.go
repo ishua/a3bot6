@@ -3,6 +3,7 @@ package taskparser
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 )
 
 // formatTask renders a single task (and, recursively, its subtasks) back to
@@ -48,34 +49,40 @@ func formatTask(item TaskItem) string {
 	lines = append(lines, base)
 	for _, sub := range item.Subtasks {
 		for _, l := range strings.Split(formatTask(sub), "\n") {
+			// An empty subtask renders as a bare line; skip it rather than
+			// emitting a line containing only the indent tab.
+			if l == "" {
+				continue
+			}
 			lines = append(lines, "\t"+l)
 		}
 	}
 	return strings.Join(lines, "\n")
 }
 
-// FormatTasks renders each task with formatTask and groups them into parts no
-// larger than limit. limit <= 0 disables the limit, returning a single part.
-// Tasks are never split mid-way: if adding a task would push the current part
-// over the limit, the current part is closed and a new one is started. A single
-// task (including its subtasks) larger than the limit is kept as one oversized
-// part. It always returns a non-nil []string, empty for empty input.
-func FormatTasks(items []TaskItem, limit int) []string {
-	if len(items) == 0 {
+// splitByLimit groups lines into parts no larger than limit characters.
+// limit <= 0 disables the limit, returning a single part. Lines are never split
+// mid-way: if adding a line would push the current part over the limit, the
+// current part is closed and a new one is started. A single oversized line is
+// kept as one oversized part. It always returns a non-nil []string, empty for
+// empty input.
+func splitByLimit(lines []string, limit int) []string {
+	if len(lines) == 0 {
 		return []string{}
 	}
 	var result []string
 	current := ""
-	for _, it := range items {
-		line := formatTask(it)
-		if current == "" {
+	var hasContent bool
+	for _, line := range lines {
+		candidate := current + "\n" + line
+		if hasContent && limit > 0 && utf8.RuneCountInString(candidate) > limit {
+			result = append(result, current)
 			current = line
 			continue
 		}
-		candidate := current + "\n" + line
-		if len(candidate) > limit && limit > 0 {
-			result = append(result, current)
+		if !hasContent {
 			current = line
+			hasContent = true
 		} else {
 			current = candidate
 		}
@@ -84,34 +91,30 @@ func FormatTasks(items []TaskItem, limit int) []string {
 	return result
 }
 
-// FormatWarnings renders each warning as "line N: <message> | <text>" and
-// groups them into parts no larger than limit. Splitting behaves like
-// FormatTasks: limit <= 0 returns a single part and an oversized warning is
-// kept as one oversized part. It always returns a non-nil []string, empty for
-// empty input.
-func FormatWarnings(warnings []Warning, limit int) []string {
-	if len(warnings) == 0 {
-		return []string{}
+// FormatTasks renders each task with formatTask and groups them into parts no
+// larger than limit characters. limit <= 0 disables the limit, returning a
+// single part. Tasks are never split mid-way: if adding a task would push the
+// current part over the limit, the current part is closed and a new one is
+// started. A single task (including its subtasks) larger than the limit is kept
+// as one oversized part. It always returns a non-nil []string, empty for empty
+// input.
+func FormatTasks(items []TaskItem, limit int) []string {
+	lines := make([]string, 0, len(items))
+	for _, it := range items {
+		lines = append(lines, formatTask(it))
 	}
+	return splitByLimit(lines, limit)
+}
+
+// FormatWarnings renders each warning as "line N: <message> | <text>" and
+// groups them into parts no larger than limit characters. Splitting behaves
+// like FormatTasks: limit <= 0 returns a single part and an oversized warning
+// is kept as one oversized part. It always returns a non-nil []string, empty
+// for empty input.
+func FormatWarnings(warnings []Warning, limit int) []string {
 	lines := make([]string, 0, len(warnings))
 	for _, w := range warnings {
 		lines = append(lines, fmt.Sprintf("line %d: %s | %s", w.Line, w.Message, w.Text))
 	}
-	var result []string
-	current := ""
-	for _, line := range lines {
-		if current == "" {
-			current = line
-			continue
-		}
-		candidate := current + "\n" + line
-		if len(candidate) > limit && limit > 0 {
-			result = append(result, current)
-			current = line
-		} else {
-			current = candidate
-		}
-	}
-	result = append(result, current)
-	return result
+	return splitByLimit(lines, limit)
 }
