@@ -73,7 +73,7 @@ func FormatTasks(items []TaskItem, limit int) []string {
 			continue
 		}
 		candidate := current + "\n" + line
-		if len(candidate) > limit {
+		if len(candidate) > limit && limit > 0 {
 			result = append(result, current)
 			current = line
 		} else {
@@ -105,7 +105,7 @@ func FormatWarnings(warnings []Warning, limit int) []string {
 			continue
 		}
 		candidate := current + "\n" + line
-		if len(candidate) > limit {
+		if len(candidate) > limit && limit > 0 {
 			result = append(result, current)
 			current = line
 		} else {
