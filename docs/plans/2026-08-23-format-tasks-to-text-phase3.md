@@ -57,32 +57,32 @@
 
 **Создать:** `notes/internal/domain/taskparser/format_test.go`
 
-- [ ] Импортировать `testing`, `time`, `strings`
-- [ ] Использовать `mkItem` и `withDue` из `filter_test.go` где удобно; для тестов с приоритетом/эмодзи/wikilinks/inline links — использовать `TaskItem{...}` литералы напрямую (т.к. `mkItem` не покрывает эти поля)
-- [ ] `TestFormatTasks_Empty` — пустой вход возвращает `[]string{}`
-- [ ] `TestFormatTasks_NilInput` — `nil` вход возвращает `[]string{}` (non-nil)
-- [ ] `TestFormatTasks_SingleTask` — одна задача с текстом
-- [ ] `TestFormatTasks_Priority` — `(A)` / `(B)` в начале
-- [ ] `TestFormatTasks_DueDate` — `due:YYYY-MM-DD` если задана
-- [ ] `TestFormatTasks_NoDueDate` — без due date нет токена `due:`
-- [ ] `TestFormatTasks_Emojis` — эмодзи в конце
-- [ ] `TestFormatTasks_Wikilinks` — `[[link]]` восстановлены
-- [ ] `TestFormatTasks_InlineLinks` — `[text](url)` восстановлены
-- [ ] `TestFormatTasks_EmptyTextWithAttributes` — задача с пустым `Text` но с wikilinks/emojis: нет лишних пробелов
-- [ ] `TestFormatTasks_Subtasks` — подзадачи с `\t` отступом, рекурсивно
-- [ ] `TestFormatTasks_NestedSubtasks` — 3 уровня вложенности: `\t`, `\t\t` отступы
-- [ ] `TestFormatTasks_AllFields` — все поля: приоритет, текст, wikilinks, inline links, due, эмодзи, подзадачи
-- [ ] `TestFormatTasks_LimitSplit` — несколько задач разбиваются по лимиту
-- [ ] `TestFormatTasks_LimitSingleTaskExceeds` — задача длиннее лимита всё равно в одном part
-- [ ] `TestFormatTasks_LimitExact` — часть точно по границе лимита
-- [ ] `TestFormatTasks_ZeroLimit` — `limit = 0` → весь вывод одной частью
-- [ ] `TestFormatTasks_NegativeLimit` — `limit = -1` → весь вывод одной частью
-- [ ] `TestFormatWarnings_Empty` — пустой вход возвращает `[]string{}`
-- [ ] `TestFormatWarnings_NilInput` — `nil` вход возвращает `[]string{}` (non-nil)
-- [ ] `TestFormatWarnings_Formatted` — `line N: message | text`
-- [ ] `TestFormatWarnings_LimitSplit` — warnings разбиваются по лимиту
-- [ ] `TestFormatWarnings_LimitSingleWarningExceeds` — одно предупреждение длиннее лимита → одной частью
-- [ ] `TestFormatTasks_Integration` — использовать `loadTestTaskFile(t)`, форматнуть с большим лимитом, проверить наличие конкретных подстрок: `[[link car]]`, `due:2030-07-06`, `🏡`, `\t`-отступ для подзадач. Inline links и приоритеты в testdata отсутствуют — покрываются только unit-тестами
+- [x] Импортировать `testing`, `time`, `strings`
+- [x] Использовать `mkItem` и `withDue` из `filter_test.go` где удобно; для тестов с приоритетом/эмодзи/wikilinks/inline links — использовать `TaskItem{...}` литералы напрямую (т.к. `mkItem` не покрывает эти поля)
+- [x] `TestFormatTasks_Empty` — пустой вход возвращает `[]string{}`
+- [x] `TestFormatTasks_NilInput` — `nil` вход возвращает `[]string{}` (non-nil)
+- [x] `TestFormatTasks_SingleTask` — одна задача с текстом
+- [x] `TestFormatTasks_Priority` — `(A)` / `(B)` в начале
+- [x] `TestFormatTasks_DueDate` — `due:YYYY-MM-DD` если задана
+- [x] `TestFormatTasks_NoDueDate` — без due date нет токена `due:`
+- [x] `TestFormatTasks_Emojis` — эмодзи в конце
+- [x] `TestFormatTasks_Wikilinks` — `[[link]]` восстановлены
+- [x] `TestFormatTasks_InlineLinks` — `[text](url)` восстановлены
+- [x] `TestFormatTasks_EmptyTextWithAttributes` — задача с пустым `Text` но с wikilinks/emojis: нет лишних пробелов
+- [x] `TestFormatTasks_Subtasks` — подзадачи с `\t` отступом, рекурсивно
+- [x] `TestFormatTasks_NestedSubtasks` — 3 уровня вложенности: `\t`, `\t\t` отступы
+- [x] `TestFormatTasks_AllFields` — все поля: приоритет, текст, wikilinks, inline links, due, эмодзи, подзадачи
+- [x] `TestFormatTasks_LimitSplit` — несколько задач разбиваются по лимиту
+- [x] `TestFormatTasks_LimitSingleTaskExceeds` — задача длиннее лимита всё равно в одном part
+- [x] `TestFormatTasks_LimitExact` — часть точно по границе лимита
+- [x] `TestFormatTasks_ZeroLimit` — `limit = 0` → весь вывод одной частью
+- [x] `TestFormatTasks_NegativeLimit` — `limit = -1` → весь вывод одной частью
+- [x] `TestFormatWarnings_Empty` — пустой вход возвращает `[]string{}`
+- [x] `TestFormatWarnings_NilInput` — `nil` вход возвращает `[]string{}` (non-nil)
+- [x] `TestFormatWarnings_Formatted` — `line N: message | text`
+- [x] `TestFormatWarnings_LimitSplit` — warnings разбиваются по лимиту
+- [x] `TestFormatWarnings_LimitSingleWarningExceeds` — одно предупреждение длиннее лимита → одной частью
+- [x] `TestFormatTasks_Integration` — использовать `loadTestTaskFile(t)`, форматнуть с большим лимитом, проверить наличие конкретных подстрок: `[[link car]]`, `due:2030-07-06`, `🏡`, `\t`-отступ для подзадач. Inline links и приоритеты в testdata отсутствуют — покрываются только unit-тестами
 
 ### Задача 3: Верификация
 
