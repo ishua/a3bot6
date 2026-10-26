@@ -1,11 +1,12 @@
-FROM golang:alpine as build
+FROM golang:alpine AS build
 ARG APP_VERSION=dev
 RUN apk add --no-cache ca-certificates
 RUN apk add --no-cache git
-RUN go install github.com/a-h/templ/cmd/templ@latest
+# keep in sync with github.com/a-h/templ version in a3b-webui/go.mod
+RUN go install github.com/a-h/templ/cmd/templ@v0.3.1020
 WORKDIR /build
 ADD . .
-RUN templ generate ./a3b-webui/
+RUN cd a3b-webui && templ generate .
 RUN CGO_ENABLED=0 GOOS=linux \
     go build -ldflags "-X main.appVersion=$APP_VERSION -extldflags '-static'" -o /build/app /build/a3b-webui/cmd/server
 
