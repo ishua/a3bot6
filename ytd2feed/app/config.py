@@ -1,5 +1,7 @@
-import yaml
+import os
 import sys
+
+import yaml
 
 class Conf():
     def __init__(self):
@@ -7,8 +9,7 @@ class Conf():
         with open("conf/ytdl_config.yaml") as f:
             self.conf = yaml.load(f, Loader=yaml.FullLoader)
 
-        self.users =  self.conf.get("users")
-        print(self.conf)
+        self.users = self.conf.get("users")
         if len(self.users) < 1:
             print("need users in config")
             sys.exit(1) 
@@ -23,7 +24,7 @@ class Conf():
 
     @property
     def mcore_secret(self) -> str:
-        return self.conf.get("mcoreSecret", "test")
+        return os.environ.get("MCORE_SECRET", self.conf.get("mcoreSecret", "test"))
 
     @property
     def path2content( self ) ->str: 

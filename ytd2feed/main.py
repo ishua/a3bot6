@@ -33,8 +33,8 @@ if __name__ == '__main__':
     ytdl_verion = version('yt_dlp')
     print("yt_dlp version", ytdl_verion)
     cfg = app.Conf()
-    print("mcore addr: {}, mcore_secret: {}, taskType: {}, "
-          .format(cfg.mcore_addr, cfg.mcore_secret,cfg.task_type))
+    print("mcore addr: {}, taskType: {}"
+          .format(cfg.mcore_addr, cfg.task_type))
     # init content path
     if not os.path.isdir(cfg.path2content):
          os.makedirs(cfg.path2content)
