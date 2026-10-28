@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -161,7 +162,8 @@ func (tg *tgClient) ListeningTg(ctx context.Context) {
 					if update.Message.Document != nil {
 						fileUrl, err = tg.bot.GetFileDirectURL(update.Message.Document.FileID)
 						if err != nil {
-							log.Printf("tg createMessage can't get file url: %s", err.Error())
+							// mask bot token: url.Error contains the full request URL
+							log.Printf("tg createMessage can't get file url: %s", strings.ReplaceAll(err.Error(), tg.bot.Token, "***"))
 							continue
 						}
 					}

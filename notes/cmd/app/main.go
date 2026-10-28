@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -54,7 +53,6 @@ func main() {
 		logger.Debugf("debug logging enabled")
 	}
 	logger.Infof("starting notes version: %s", appVersion)
-	fmt.Println(cfg.GitAccessToken)
 
 	gc, err := gitapi.NewClient(cfg.GitPath, cfg.GitUrl, cfg.GitAccessToken, "bot notes", cfg.GitEmail)
 	if err != nil {

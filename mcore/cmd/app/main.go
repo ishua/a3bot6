@@ -37,7 +37,8 @@ func main() {
 		},
 	})
 	if err := loader.Load(); err != nil {
-		logger.Fatal(err.Error())
+		// don't log err here: aconfig errors may embed config values (secrets)
+		logger.Fatal("config load error")
 	}
 
 	if cfg.Debug {
