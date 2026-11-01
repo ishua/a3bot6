@@ -13,8 +13,6 @@ This file provides guidance for AI agents working on this codebase.
     - tbot - клиент для telegram, два потока: читает сообщения кидает в mcore, получает задания на отправку сообщений
     - synoc - клиент для управления synology сервисом
     - notes - клиент для написания заметок в текстовом формате и синком их через git
-    - a3b-webui - WebUI для управления xray через HTMX (логин, дашборд, переключение)
-    - xray-manual-svc - REST API для управления xray балансировщиком
 - python
     - ytd2feed - клиент для загрузки аудио из youtube и формирования rss
     - tr_mng - клиент для управления transmission через api
@@ -40,8 +38,6 @@ This file provides guidance for AI agents working on this codebase.
 | tr_mng   | Python   | Transmission API управление          |
 | synoc    | Go       | Synology Download Station API        |
 | notes    | Go       | Git-based заметки (fsnotes)          |
-| a3b-webui | Go      | WebUI для xray: логин, дашборд, HTMX |
-| xray-manual-svc | Go | Управление xray балансировщиком (REST API) |
 
 ### Data Flow
 
@@ -80,12 +76,6 @@ cd tbot && go build -o build/tbot ./cmd/app
 # Build synoc
 cd synoc && go build -o build/synoc ./cmd
 
-# Build a3b-webui
-cd a3b-webui && make build
-
-# Build xray-manual-svc
-cd xray-manual-svc && go build -o build/server ./cmd/server
-
 ### Docker Builds
 
 ```bash
@@ -96,8 +86,6 @@ docker-compose build
 docker build -t mcore -f ./mcore/Dockerfile .
 docker build -t tbot -f ./tbot/Dockerfile .
 docker build -t ytd -f ./ytd2feed/Dockerfile .
-docker build -t xray -f ./xray-manual-svc/Dockerfile .
-docker build -t webui -f ./a3b-webui/Dockerfile .
 
 # Run all services
 docker-compose up -d
@@ -205,8 +193,6 @@ a3bot6/
 ├── notes/                  # Notes service (Git-based)
 ├── ytd2feed/               # YouTube to RSS Python service
 ├── tr_mng/                 # Transmission management Python service
-├── a3b-webui/              # WebUI for xray (HTMX, templ)
-├── xray-manual-svc/        # xray balancer REST API
 └── compose.yml             # Docker Compose configuration
 ```
 
@@ -227,8 +213,6 @@ Interfaces используются для зависимостей между �
 - `tbot/conf/tbot_config.yaml` - Telegram bot config
 - `ytd2feed/conf/ytdl_config.yaml` - YouTube downloader config
 - `synoc/conf/config.yaml` - Synology worker config
-- `a3b-webui/conf/a3b_webui_config.yaml` - a3b-webui config
-- `xray-manual-svc/conf/xray_manual_svc_config.yaml` - xray-manual-svc config
 
 ## Logging
 
