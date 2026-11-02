@@ -4,63 +4,63 @@ This file provides guidance for AI agents working on this codebase.
 
 ## Project Overview
 
-Мультисервисный проект:
-Основная цель, написание разных сервисов для выполнения рутинных операций через telegram
-Сервисы могут быть физически запущенны на разных сервера
+Multi-service project:
+The main goal is writing various services to perform routine operations via telegram
+Services can be physically running on different servers
 
 - GO
-    - mcore - ядро бизнес логики, парсинг сообщений, управление очередями и хранение стейта
-    - tbot - клиент для telegram, два потока: читает сообщения кидает в mcore, получает задания на отправку сообщений
-    - synoc - клиент для управления synology сервисом
-    - notes - клиент для написания заметок в текстовом формате и синком их через git
+    - mcore - business logic core, message parsing, queue management and state storage
+    - tbot - client for telegram, two threads: reads messages and pushes them to mcore, receives jobs for sending messages
+    - synoc - client for managing the synology service
+    - notes - client for writing notes in text format and syncing them via git
 - python
-    - ytd2feed - клиент для загрузки аудио из youtube и формирования rss
-    - tr_mng - клиент для управления transmission через api
+    - ytd2feed - client for downloading audio from youtube and generating rss
+    - tr_mng - client for managing transmission via api
 
-Коммуникация между сервисами происходит по http rest api
-Данные хранятся в SQLite database в mcore
+Communication between services happens over http rest api
+Data is stored in a SQLite database in mcore
 
-Исходники проекта хранятся в публичном репозитории, следить за утечкой секретов и других приватных данных.
+The project sources are stored in a public repository, watch for leaking secrets and other private data.
 
-Единственный разработчик понимает английский, но предпочитает общение на русском языке
+The sole developer understands English but prefers communication in Russian
 
 ## Architecture
 
-Сервисная архитектура с общей SQLite БД и HTTP API. Все сервисы stateless, состояние хранится в mcore.
+Service architecture with a shared SQLite DB and HTTP API. All services are stateless, state is stored in mcore.
 
 ### Components
 
 | Service | Language | Purpose                              |
 |----------|----------|--------------------------------------|
-| mcore    | Go       | Центр системы: REST API, storage, task management |
-| tbot     | Go       | Telegram шлюз: читает из TG → mcore, слушает mcore → отправляет в TG |
+| mcore    | Go       | System center: REST API, storage, task management |
+| tbot     | Go       | Telegram gateway: reads from TG → mcore, listens to mcore → sends to TG |
 | ytd2feed | Python   | YouTube → RSS (yt-dlp)               |
-| tr_mng   | Python   | Transmission API управление          |
+| tr_mng   | Python   | Transmission API management          |
 | synoc    | Go       | Synology Download Station API        |
-| notes    | Go       | Git-based заметки (fsnotes)          |
+| notes    | Go       | Git-based notes (fsnotes)            |
 
 ### Data Flow
 
-1. Пользователь пишет в Telegram
+1. User writes in Telegram
 2. tbot → mcore (`POST /add-msg/`)
-3. mcore: создать dialog → распарсить команду → создать task в БД
-4. Worker poll mcore (`POST /get-task/`) → выполнить → (`POST /report-task/`)
+3. mcore: create dialog → parse the command → create task in the DB
+4. Worker poll mcore (`POST /get-task/`) → execute → (`POST /report-task/`)
 
 ### Task System
 
 - **TaskType**: Msg, Ytdl, Torrent, Note, Syno, Finance, Rest
 - **TaskStatus flow**: Create → Sended → Done / Error
-- Workers используют `mcoreclient` library для коммуникации
+- Workers use `mcoreclient` library for communication
 
 ### REST API (mcore)
 
-- `POST /add-msg/` - добавить сообщение от пользователя
-- `POST /get-task/` - получить задачу для worker (по типу)
-- `POST /report-task/` - обновить статус задачи
+- `POST /add-msg/` - add a message from the user
+- `POST /get-task/` - get a task for a worker (by type)
+- `POST /report-task/` - update the task status
 - `GET /health/` - health check
-- `POST /delete-all-data/` - очистка БД (для dev)
+- `POST /delete-all-data/` - clean the DB (for dev)
 
-Все endpoints (кроме /health) требуют header `secret` для авторизации.
+All endpoints (except /health) require the `secret` header for authorization.
 
 ## Build, Test, and Run Commands
 
@@ -199,13 +199,13 @@ a3bot6/
 ## Important Patterns
 
 ### Dependency Injection
-Interfaces используются для зависимостей между пакетами (см. `routing.go`).
+Interfaces are used for dependencies between packages (see `routing.go`).
 
 ### mcoreclient Library
-Все workers используют `mcoreclient` для коммуникации с mcore:
-- `ListeningTasks()` - фоновый процесс для опроса задач
-- `AddMsg()` - отправка сообщений в mcore
-- `GetTask()` / `ReportTask()` - работа с задачами
+All workers use `mcoreclient` for communication with mcore:
+- `ListeningTasks()` - background process for polling tasks
+- `AddMsg()` - sending messages to mcore
+- `GetTask()` / `ReportTask()` - working with tasks
 
 ## Configuration Files
 
