@@ -1,224 +1,73 @@
-# AGENTS.md - Development Guide for a3bot6
+# a3bot6 — routine operations via Telegram bots (multi-service, mcore-centered)
+Map of all projects and agent rules: ../hq/AGENTS.md
 
-This file provides guidance for AI agents working on this codebase.
+## Purpose
+A set of small services that perform routine operations triggered by Telegram commands.
+mcore is the center: it receives messages, parses commands, stores all state and hands
+out tasks; workers execute tasks and report back. Services are stateless and talk over
+HTTP REST; state lives in mcore's SQLite database. The repository is public — watch for
+leaking secrets. The sole developer understands English but prefers communication in Russian.
 
-## Project Overview
+## Stack
+- Go workspace (`go.work`): mcore, tbot, notes. Python 3: ytd2feed (yt-dlp).
+- SQLite via mattn/go-sqlite3 — mcore builds/tests need CGO_ENABLED=1.
+- Key libs: telegram-bot-api v5 (tbot), go-git (notes), cristalhq/aconfig + YAML configs,
+  custom logger (`mcore/pkg/logger`: Debug/Info/Warn/Fatal, SetLogLevel).
 
-Multi-service project:
-The main goal is writing various services to perform routine operations via telegram
-Services can be physically running on different servers
+## Structure
+- `mcore/` — core: REST API (`internal/rest`), command routing (`internal/routing`),
+  task processing (`internal/taskmng`), SQLite storage (`internal/storage/msqlclient`);
+  shared types in `pkg/schema` (Task, Dialog, Message); worker client library in `pkg/mcoreclient`.
+- `tbot/` — Telegram gateway: reads TG messages → mcore; receives jobs from mcore → sends to TG.
+- `notes/` — notes worker: git-based notes (fsnotes), `/note` commands; task-list parsing
+  in `internal/domain/taskparser`.
+- `ytd2feed/` — Python worker: downloads YouTube audio and generates an RSS feed.
+- `compose.yml`, `*/Dockerfile` — docker images; `.github/workflows/` — build and push to ghcr.io on `v*.*.*` tags.
+- `conf/*.yaml` in each service — placeholder configs; real values exist only on the server.
+- `docs/`, `static/` — work plans and bot assets.
 
-- GO
-    - mcore - business logic core, message parsing, queue management and state storage
-    - tbot - client for telegram, two threads: reads messages and pushes them to mcore, receives jobs for sending messages
-    - synoc - client for managing the synology service
-    - notes - client for writing notes in text format and syncing them via git
-- python
-    - ytd2feed - client for downloading audio from youtube and generating rss
-    - tr_mng - client for managing transmission via api
+## Task flow and REST API
+- Flow: user writes in TG → tbot `POST /add-msg/` → mcore creates a dialog, parses the
+  command, creates a task → worker `POST /get-task/` → executes → `POST /report-task/`.
+- Endpoints: `POST /add-msg/`, `POST /get-task/`, `POST /report-task/`, `GET /health/`,
+  `POST /delete-all-data/` (dev only). All except `/health/` require the `secret` header.
+- Task types (`mcore/pkg/schema/task.go`): Msg, Ytdl, Rest, Note, Torrent, Finance, Syno;
+  status flow Create → Sended → Done / Error.
+- Workers talk to mcore only via `mcore/pkg/mcoreclient`: `NewClient(addr, secret)`,
+  `AddMsg()`, `GetTask()`, `ReportTask()`, `ListeningTasks()` (background polling loop).
 
-Communication between services happens over http rest api
-Data is stored in a SQLite database in mcore
+## How to run and verify
+From the repo root:
+- `make build` — `CGO_ENABLED=1 go build ./...` in each Go module (mcore, tbot, notes)
+- `make test` — `go test ./...` in each Go module
+- `make help` — target and module list.
+ytd2feed is Python and is not covered by these targets. Per-module commands:
+`cd mcore && go build ./...` (same for tbot, notes). Local run of the core:
+`make -C mcore run` — builds `mcore/build/mcore` and starts it with `mcore/conf/mcore_config.yaml`.
+ytd2feed: `pip install -r ytd2feed/requirements.txt && python ytd2feed/main.py`; it has no automated tests.
 
-The project sources are stored in a public repository, watch for leaking secrets and other private data.
+## Deploy
+`docker-compose build` builds images locally; GitHub Actions pushes images to ghcr.io on
+`v*.*.*` tags. The services actually run on host b; deploy goes through the bserv
+repository (upd.sh per service folder). Any deploy — only with owner confirmation (hq/AGENTS.md).
 
-The sole developer understands English but prefers communication in Russian
+## Code style
+- Imports: stdlib first, then external; blank import `_` for side effects (sqlite3 driver).
+- Naming: camelCase for variables/functions, PascalCase for exported, lowercase unexported;
+  interfaces end in `-er` or a descriptive name; packages short and lowercase, no underscores.
+- Errors: return explicitly, wrap with context `fmt.Errorf("action: %w", err)`;
+  log at the call site; `logger.Fatal` only for fatal startup/config problems.
+- Configs: aconfig with `default`/`required`/`usage` tags, YAML files in `conf/`, validated at startup.
+- Python: stdlib imports first, snake_case functions/variables, PascalCase classes.
 
-## Architecture
+## Rules and restrictions
+- No secrets in git (public repo): `conf/*.yaml` hold placeholders (`test`, `sometoken`) —
+  keep them placeholders; real tokens live only on the server (.env / server configs).
+- Workers must reach mcore through `mcoreclient` with the `secret` header — do not bypass.
+- `pkg/schema` is the contract between mcore and workers: a task-type change touches
+  routing, taskmng and the worker side — keep the flow above intact.
 
-Service architecture with a shared SQLite DB and HTTP API. All services are stateless, state is stored in mcore.
-
-### Components
-
-| Service | Language | Purpose                              |
-|----------|----------|--------------------------------------|
-| mcore    | Go       | System center: REST API, storage, task management |
-| tbot     | Go       | Telegram gateway: reads from TG → mcore, listens to mcore → sends to TG |
-| ytd2feed | Python   | YouTube → RSS (yt-dlp)               |
-| tr_mng   | Python   | Transmission API management          |
-| synoc    | Go       | Synology Download Station API        |
-| notes    | Go       | Git-based notes (fsnotes)            |
-
-### Data Flow
-
-1. User writes in Telegram
-2. tbot → mcore (`POST /add-msg/`)
-3. mcore: create dialog → parse the command → create task in the DB
-4. Worker poll mcore (`POST /get-task/`) → execute → (`POST /report-task/`)
-
-### Task System
-
-- **TaskType**: Msg, Ytdl, Torrent, Note, Syno, Finance, Rest
-- **TaskStatus flow**: Create → Sended → Done / Error
-- Workers use `mcoreclient` library for communication
-
-### REST API (mcore)
-
-- `POST /add-msg/` - add a message from the user
-- `POST /get-task/` - get a task for a worker (by type)
-- `POST /report-task/` - update the task status
-- `GET /health/` - health check
-- `POST /delete-all-data/` - clean the DB (for dev)
-
-All endpoints (except /health) require the `secret` header for authorization.
-
-## Build, Test, and Run Commands
-
-### Go Services (mcore, tbot, synoc, notes)
-
-```bash
-# Build mcore
-cd mcore && go build -o build/mcore ./cmd/app
-
-# Build tbot
-cd tbot && go build -o build/tbot ./cmd/app
-
-# Build synoc
-cd synoc && go build -o build/synoc ./cmd
-
-### Docker Builds
-
-```bash
-# Build all services
-docker-compose build
-
-# Build single service
-docker build -t mcore -f ./mcore/Dockerfile .
-docker build -t tbot -f ./tbot/Dockerfile .
-docker build -t ytd -f ./ytd2feed/Dockerfile .
-
-# Run all services
-docker-compose up -d
-```
-
-## Code Style Guidelines
-
-### Go (Primary Language)
-
-#### Imports
-- Use standard library imports first, then external packages
-- Group stdlib (`fmt`, `os`, `time`, etc.) from external packages
-- Use blank import (`_`) for side effects (e.g., `_ "github.com/mattn/go-sqlite3"`)
-
-```go
-import (
-    "context"
-    "fmt"
-    "time"
-    
-    "github.com/cristalhq/aconfig"
-    "github.com/ishua/a3bot6/mcore/pkg/logger"
-)
-```
-
-#### Naming Conventions
-- **Variables/Functions**: camelCase (`newSqlClient`, `cfg`)
-- **Exported Types/Constants**: PascalCase (`SqliteClient`, `MyConfig`)
-- **Unexported**: lowercase (`dialogMng`, `taskMng`)
-- **Interfaces**: suffix with `er` or descriptive name (`taskWorker`, `dialogMng`)
-- **Packages**: short, lowercase, no underscores (`routing`, `taskmng`)
-
-#### Types and Structs
-- Use struct tags for serialization (JSON, YAML, DB)
-- Prefer interfaces for dependency injection
-- Use pointers for mutable receivers (`func (c *Client) DoTask(...)`)
-- Define constants in a `const` block at package level
-
-#### Error Handling
-- Return errors explicitly, don't use exceptions
-- Wrap errors with context: `fmt.Errorf("action description: %w", err)`
-- Use sentinel errors for known conditions when appropriate
-- Log errors at call site, not in utility functions
-
-```go
-// Good
-if err != nil {
-    return mr, fmt.Errorf("addmsg doPost: %w", err)
-}
-
-// Config validation with fatal exit
-if len(cfg.Secrets) == 0 {
-    logger.Fatal("no secrets configured")
-}
-```
-
-#### Configuration
-- Use `aconfig` library with YAML files
-- Define config struct with tags: `default:"value"`, `required:"true"`, `usage:"description"`
-- Config files stored in `conf/` directories per service
-
-```go
-type MyConfig struct {
-    HttpPort string   `default:"8080" usage:"port for HTTP REST"`
-    Debug    bool     `default:"false" usage:"turn on debug mode"`
-}
-```
-
-### Python
-
-#### Imports
-- Standard library first, then third-party, then local
-- Use absolute imports (`from app.config import Conf`)
-
-#### Naming
-- snake_case for functions, variables, properties
-- PascalCase for classes
-
-```python
-class Conf():
-    @property
-    def mcore_addr(self) -> str:
-        return self.conf.get("mcoreAddr", "http://localhost:8080")
-```
-
-## Project Structure
-
-```
-a3bot6/
-├── mcore/                  # Core service - REST API, storage, task management
-│   ├── cmd/app/            # Entry points
-│   ├── internal/
-│   │   ├── rest/           # HTTP handlers
-│   │   ├── routing/        # Message routing and command parsing
-│   │   ├── taskmng/        # Task creation and processing
-│   │   ├── dialogmng/      # Dialog management
-│   │   ├── storage/        # SQLite client and queries
-│   │   └── functions/      # Utility functions
-│   └── pkg/
-│       ├── schema/         # Data structures (Task, Dialog, Message)
-│       ├── logger/         # Custom logger
-│       └── mcoreclient/    # HTTP client for mcore
-├── tbot/                   # Telegram bot service
-├── synoc/                  # Synology worker service
-├── notes/                  # Notes service (Git-based)
-├── ytd2feed/               # YouTube to RSS Python service
-├── tr_mng/                 # Transmission management Python service
-└── compose.yml             # Docker Compose configuration
-```
-
-## Important Patterns
-
-### Dependency Injection
-Interfaces are used for dependencies between packages (see `routing.go`).
-
-### mcoreclient Library
-All workers use `mcoreclient` for communication with mcore:
-- `ListeningTasks()` - background process for polling tasks
-- `AddMsg()` - sending messages to mcore
-- `GetTask()` / `ReportTask()` - working with tasks
-
-## Configuration Files
-
-- `mcore/conf/mcore_config.yaml` - Core service config
-- `tbot/conf/tbot_config.yaml` - Telegram bot config
-- `ytd2feed/conf/ytdl_config.yaml` - YouTube downloader config
-- `synoc/conf/config.yaml` - Synology worker config
-
-## Logging
-
-Use the custom logger package in mcore (`pkg/logger/logger.go`):
-- `logger.Debug(msg)`
-- `logger.Info(msg)`
-- `logger.Warn(msg)`
-- `logger.Fatal(msg)` - exits program
-- `logger.SetLogLevel(logger.DEBUG)` - enable debug mode
+## Relations
+- bserv — mcore, tbot, ytd (ytd2feed) and notes containers run on host b
+  (hq/hosts.md: `b`, b.a3b.me); the RSS feed is served via caddy on b.
+- fsnotes — the notes worker reads and syncs the owner's notes repository.
